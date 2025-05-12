@@ -1,0 +1,245 @@
+body, html {
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* 전체 콘텐츠 래퍼 */
+.content-wrapper {
+  margin-left: 200px; /* ✅ 사이드바 너비만큼 여백 확보 */
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex-grow: 1;
+  padding: 24px;
+  box-sizing: border-box;
+  width: 100%;
+  overflow: visible;
+}
+
+/* ===== 사이드바 ===== */
+.sidebar {
+  width: 200px;
+  background-color: white;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  padding-top: 16px;
+  position: fixed;
+  top: 64px; /* 헤더 높이만큼 내려감 */
+  bottom: 0;
+  left: 0;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+button:focus {
+  outline: none;
+}
+
+.tab-item-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.tab-item-with-plus {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tab-button {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  background: none;
+  border: none;
+  color: #000;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 0;
+  width: 100%;
+  margin: 0;
+}
+
+.tab-icon {
+  width: 15px;
+  height: 15px;
+  margin-right: 8px;
+  filter: grayscale(100%) brightness(0.6);
+  transition: filter 0.2s ease;
+}
+
+.tab-icon-active {
+  filter: invert(29%) sepia(86%) saturate(1647%) hue-rotate(211deg) brightness(95%) contrast(93%);
+}
+
+.tab-button:hover {
+  background-color: #f3f4f6;
+}
+
+.tab-plus-button:hover {
+  background-color: transparent !important;
+}
+
+.tab-item-with-plus:hover {
+  background-color: #f3f4f6;
+}
+
+.tab-button:hover {
+  background-color: transparent;
+}
+
+
+.tab-button-active {
+  background-color: #e0e7ff;
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.tab-plus-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  margin-right: 8px;
+}
+
+.tab-plus-button img {
+  width: 14px;
+  height: 14px;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.tab-plus-button:hover img {
+  opacity: 1;
+}
+
+.project-sublist {
+  margin-left: 16px;
+  margin-top: 4px;
+}
+
+.project-sublist-item {
+  padding: 2px 8px;
+  font-size: 13px;
+  background-color: transparent;
+  border: none;
+  color: #000;
+  cursor: pointer;
+}
+
+.project-sublist-item.active {
+  color: #3b82f6 !important;
+  font-weight: bold;
+}
+
+.tab-item-with-plus.tab-active {
+  background-color: #e0e7ff;
+}
+
+.tab-item-with-plus.tab-active .tab-plus-button img {
+  filter: invert(29%) sepia(86%) saturate(1647%) hue-rotate(211deg) brightness(95%) contrast(93%);
+  opacity: 1;
+}
+
+
+/* ===== 상단 헤더 ===== */
+.top-bar {
+  position: fixed;
+  justify-content: space-between;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background-color: white;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  z-index: 10;
+}
+
+.search-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 auto;
+  position: relative;
+  justify-content: center;
+  flex: 1;
+}
+
+.search-input {
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+  flex: 1;
+  max-width: 600px;
+  outline: none;
+  height: 32px;
+  box-sizing: border-box;
+  position: relative;
+  top: 3px;
+}
+
+.create-button {
+  background-color: #7e9dec;
+  color: white;
+  font-size: 12px;
+  border: none;
+  border-radius: 20px;
+  outline: none;
+}
+
+.icon-group {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-left: auto;
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+/* === 보드/백로그 탭 === */
+.project-subtabs {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-left: 8px;
+}
+
+.project-subtabs button {
+  background: none;
+  border: none;
+  padding: 6px 12px;
+  font-size: 11px;
+  color: #4b5563;
+  cursor: pointer;
+  border-radius: 4px 4px 0 0;
+  transition: background-color 0.2s ease;
+}
+
+.project-subtabs button:hover {
+  background-color: #f3f4f6;
+}
+
+.project-subtabs button.active {
+  background-color: #e0e7ff; /* blue-100 */
+  color: #3b82f6; /* blue-600 */
+  font-weight: 600;
+}

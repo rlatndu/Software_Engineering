@@ -1,0 +1,210 @@
+/* IssueCreatePopup.css */
+
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+  }
+  
+  .popup-content.issue-create-popup {
+    background-color: #fff;
+    width: 720px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    position: relative;
+    font-family: 'Pretendard', sans-serif;
+  }
+  
+  .popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  
+  .close-button {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+  }
+  
+  .form-group {
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .form-group > label {
+    font-weight: bold;
+    margin-bottom: 6px;
+    color: #2c3e50;
+  }
+  
+  .form-group > input,
+  .form-group > select,
+  .form-group > textarea {
+    padding: 8px 10px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  .form-group > textarea {
+    min-height: 80px;
+    resize: vertical;
+  }
+  
+  .form-group-row.date-time-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 24px;
+  }
+
+  .datetime-inputs-column {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 260px;
+  }
+  
+  .calendar-wrapper {
+    flex: 1;
+    min-width: 600px;
+  }
+  
+  .date-label-inputs {
+    display: flex;
+    justify-content: start;
+    gap: 16px;
+    margin-bottom: 8px;
+  }
+  
+  .date-label-group {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .date-label-group label {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 4px;
+    color: #2c3e50;
+  }
+  
+  .date-label-group input {
+    padding: 8px 12px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 180px;
+    background-color: #fff;
+  }
+  
+  .date-display-input {
+    font-size: 16px;
+    text-align: center;        /* ✅ 가운데 정렬 */
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    padding: 8px 12px;
+    width: 240px;              /* ✅ 필요에 따라 넓이 조절 */
+    font-family: 'Pretendard', sans-serif;
+    background-color: #fff;
+  }
+  
+  
+  .time-section {
+    display: flex;
+    gap: 48px;
+    justify-content: space-between;
+  }
+  
+  .time-column {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 300px;
+  }
+  
+  .time-column label {
+    font-weight: bold;
+    color: #2c3e50;
+  }
+  
+  .time-inputs {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .time-inputs select,
+  .time-inputs input {
+    flex: 1;
+    padding: 8px 10px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  .file-drop-area {
+    border: 1px dashed #aaa;
+    background-color: #f8f9fa;
+    padding: 20px;
+    text-align: center;
+    color: #888;
+    font-size: 14px;
+    border-radius: 6px;
+  }
+  
+  .popup-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 24px;
+  }
+  
+  .reporter {
+    font-size: 14px;
+    color: #555;
+  }
+  
+  .popup-buttons {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .cancel-button,
+  .create-button {
+    padding: 8px 20px;
+    font-size: 14px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .cancel-button {
+    background-color: #f2f2f2;
+    color: #333;
+  }
+  
+  .create-button {
+    background-color: #3f51b5;
+    color: white;
+  }
+  
+/* 날짜 표시 상단 박스 배경 제거 */
+.rdrDateDisplayWrapper {
+    background-color: white !important;
+    box-shadow: none !important;
+    display: none;
+  }
+  
