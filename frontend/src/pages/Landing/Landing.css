@@ -1,0 +1,248 @@
+/* 기본 스타일 */
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Pretendard', sans-serif;
+  background-color: #f5f5f5;
+}
+
+.landing_container {
+  width: 100vw;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f5f5f5;
+}
+
+/* 헤더 */
+.landing_header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 150px;
+  background-color: white;
+}
+
+.logo_section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.logo_img {
+  height: 40px;
+  width: auto;
+  margin-right: 8px;
+}
+
+.logo_section h1 {
+  display: flex;
+  align-items: center;
+  font-size: 20px;
+  font-weight: bold;
+  margin: 0;
+  color: #000;
+}
+
+.logo_text {
+  font-size: 20px;
+  font-weight: bold;
+  color: #7e9dec;
+}
+
+.auth_button button {
+  margin-left: 10px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.login_button {
+  font-size: 12px;
+  background-color: transparent;
+  color: #7e9dec;
+  border-radius: 20px;
+}
+
+.join_button {
+  font-size: 12px;
+  background-color: #7e9dec;
+  color: white;
+  border-radius: 20px;
+}
+
+/* 본문 */
+.landing_main {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 5vw 8vw;
+  gap: 25vw;
+  background-color: #f5f5f5;
+}
+
+.landing_text h1 {
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.5;
+  margin-bottom: 50px;
+  color: #000;
+}
+
+.landing_text .highlight {
+  color: #7e9dec;
+}
+
+.landing_text p {
+  font-size: 16px;
+  font-weight: 700;
+  color: #000;
+  line-height: 1.6;
+}
+
+/* 로그인 박스 */
+.landing_login {
+  width: 320px;
+  padding: 30px;
+}
+
+.landing_login * {
+  box-sizing: border-box;
+}
+
+.landing_login label {
+  font-size: 14px;
+  color: #7e9dec;
+  font-weight: 600;
+  margin: 8px 0 0 15px;
+}
+
+.landing_login input[type="text"],
+.landing_login input[type="password"] {
+  width: 100%;
+  padding: 12px 20px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+  outline: none;
+}
+
+.login_remember {
+  display: flex;
+}
+
+.login_remember label {
+  line-height: 1;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #9b9b9b;
+  margin: 5px 0 15px 0;
+  padding-left: 10px;
+  padding-top: 5px;
+}
+
+.login_remember input[type="checkbox"] {
+  transform: translateY(-1px); /* 미세 조정 */
+}
+
+.landing_login .login_button {
+  width: 100%;
+  padding: 12px 12px;
+  background-color: #7e9dec;
+  color: white;
+  border: none;
+  border-radius: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* 또는 구분선 */
+.social_divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 20px 0;
+  font-size: 13px;
+  color: #aaa;
+}
+
+.social_divider .line {
+  flex: 1;
+  height: 1px;
+  background-color: #aaa;
+}
+
+.social_divider .or-text {
+  white-space: nowrap;
+}
+
+/* SNS 로그인 */
+.sns_login {
+  display: flex;
+}
+
+.sns_login button {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  margin: 0 5px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  background-color: white;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.google_btn span {
+  color: #555;
+}
+
+.naver_btn span {
+  color: #03c75a;
+}
+
+/* 하단 링크 */
+.long_links {
+  color: #4d6bff96;
+  text-align: center;
+  font-size: 11px;
+  margin-top: 15px;
+}
+
+.long_links a {
+  color: #4d6bff96;
+  text-decoration: none;
+  margin: 0 3px;
+}
+  
+
+  /* 작은 화면 대응
+@media screen and (max-width: 768px) {
+    .landing_main {
+      flex-direction: column;
+      align-items: center;
+      padding: 5vw;
+    }
+  
+    .landing_text, .landing_login {
+      width: 100%;
+      max-width: 90vw;
+    }
+  
+    .landing_text h1 {
+      font-size: 1.8rem;
+      text-align: center;
+    }
+  
+    .landing_text p {
+      text-align: center;
+    }
+  } */

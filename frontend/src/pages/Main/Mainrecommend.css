@@ -1,0 +1,160 @@
+  /*최근 항목*/
+
+  .main-layout {
+    display: flex;
+    flex-direction: row;
+    min-height: 100vh;
+    width: 100vw;
+    overflow-y: auto; /* ✅ 세로 스크롤 허용 */
+    background-color: white;
+  }
+  
+/* === 콘텐츠 래퍼는 사이드바를 피해서 배치 === */
+.content-wrapper {
+    margin-left: 200px;          /* 사이드바 폭만큼 띄우기 */
+    padding-top: 64px;           /* 헤더 높이 */;
+    width: calc(100% - 200px);   /* ✅ 나머지 전체 너비 사용 */
+    min-width: 0;                /* ✅ flexbox 수축 허용 */
+  }
+  
+  .main-content {
+    height: calc(100vh - 64px);
+    padding: 24px;
+    overflow-y: auto;
+    width: 100%;                /* ✅ 부모 기준 꽉 채움 */
+    box-sizing: border-box;     /* ✅ padding 포함 */
+    padding-left: 50px;
+  }
+  
+  
+  .recommend-tab {
+    width: 100%; /* ✅ 메인 콘텐츠 너비를 전부 사용 */
+  }
+  
+  .section-title {
+    font-size: 20px;
+    font-weight: 600;
+    padding-bottom: 8px;
+    /*border-bottom: 1px solid #e5e7eb;*/
+    margin-bottom: 8px;
+    color: #111827;
+  }
+  
+  .project-list {
+    display: flex;
+    flex-wrap: wrap;          /* ✅ 카드 여러 개 배치 */
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+/* 프로젝트가 없을 때 안내 박스 */
+.empty-project {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* 수평 가운데 정렬 */
+    text-align: center;
+    margin-top: 48px;
+    color: #000;
+  }
+  
+  .empty-project p {
+    font-size: 16px;
+    margin-bottom: 5px;
+  }
+  
+  .empty-project img {
+    margin: 12px 0;
+    width: 150px;
+    height: auto;
+  }
+  
+  .link {
+    color: #3b82f6;
+    font-weight: 500;
+    font-size: 13px;
+    text-decoration: none;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  
+
+/* 추천 탭의 서브탭 버튼들 */
+.recommend-subtab {
+  display: flex;
+  gap: 8px;
+  margin-top: 70px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-left: 8px;
+}
+
+.recommend-subtab-button {
+  background: none;
+  border: none;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #4b5563;
+  cursor: pointer;
+  border-radius: 4px 4px 0 0;
+  transition: background-color 0.2s ease;
+}
+
+.recommend-subtab-button:hover {
+  background-color: #f3f4f6;
+}
+
+.recommend-subtab-button.active {
+  background-color: #e0e7ff; /* blue-100 */
+  color: #3b82f6; /* blue-600 */
+  font-weight: 600;
+}
+
+/* 서브탭 콘텐츠 */
+.recommend-content {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+/* 프로젝트 카드 목록 */
+.project-list {
+  display: flex;
+  flex-direction: row;
+}
+
+.project-card {
+  width: 220px;
+  height: 180px;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0 16px 16px 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.project-card h3 {
+  font-size: 16px;
+  color: #000;
+  margin-bottom: 6px;
+}
+
+.project-card h4 {
+  font-size: 13px;
+  color: #000;
+  margin: 0;
+}
+
+
+.project-card button {
+  background-color: #7e9dec;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}

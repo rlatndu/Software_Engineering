@@ -1,0 +1,344 @@
+/* 전체 보드 영역 */
+.project-board-view {
+  display: flex;
+  gap: 16px;
+  padding: 0 24px 24px 24px;
+  min-height: 520px;
+  border-radius: 0;
+  align-items: flex-start;
+  margin-top: 5px;
+  height: calc(100vh - 270px);
+  overflow-x: auto;
+  background-color: #ededed !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* 각 컬럼 */
+.board-column {
+  flex: 0 0 auto;
+  width: 260px;
+  max-width: 260px;
+  border-radius: 8px;
+  padding: 16px 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  position: relative;
+  overflow-y: auto;
+  overflow: visible;
+  max-height: 100%;
+  background-color: #ededed !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* 컬럼 제목 및 버튼 라인 */
+.board-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #d1d5db;
+}
+
+.board-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.column-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+/* 카드 */
+.issue-card {
+  background-color: white;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 14px;
+  color: #111827;
+  margin-bottom: 12px;
+  box-sizing: border-box;
+  user-select: none;
+  cursor: grab;
+  z-index: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-direction: row;
+  position: relative;
+  pointer-events: auto;
+}
+
+.issue-card:active {
+  cursor: grabbing;
+}
+
+/* 드롭다운 메뉴 */
+.dropdown-menu {
+  position: absolute;
+  top: 38px;
+  right: 0px;
+  background-color: white;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  z-index: 9999; /* 충분히 높게 */
+  pointer-events: auto; /* ✅ 클릭 가능하도록 */
+}
+
+.dropdown-menu button {
+  background: none;
+  border: none;
+  font-size: 13px;
+  padding: 8px 12px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dropdown-menu button:hover {
+  background-color: #f3f4f6;
+}
+
+/* 이슈 카드 내부 이클립스 버튼 */
+.card-menu-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  z-index: 2;
+}
+
+.card-menu-button img {
+  width: 14px;
+  height: 14px;
+}
+
+/* 컬럼 상단 이클립스 버튼 */
+.add-button {
+  background-color: transparent;
+  border: none;
+  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-button img {
+  width: 16px;
+  height: 16px;
+}
+
+/* 이슈 만들기 버튼 */
+.create-issue-button,
+.board-column button.issue-add-button {
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  font-size: 13px;
+  color: #4b5563;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+/* + 보드 컬럼 만들기 */
+.add-column-button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #000;
+  cursor: pointer;
+  margin-left: 8px;
+  margin-top: 4px;
+}
+
+.droppable-area {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 오버레이 전체 영역 */
+.issue-detail-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+/* 상세 패널 */
+.issue-detail-panel {
+  width: 90%;
+  height: 90%;
+  background-color: white;
+  display: flex;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+.issue-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.detail-ellipsis {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 20px;
+}
+
+/* 좌측 본문 영역 */
+.issue-main {
+  flex: 3;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  overflow-y: auto;
+}
+
+.issue-main h4 {
+  margin-bottom: 0px;
+}
+
+.issue-main p {
+  margin-top: 0;
+}
+
+/* 우측 사이드바 */
+.issue-sidebar {
+  flex: 0.5;
+  background-color: #f9fafb;
+  border-left: 1px solid #e5e7eb;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+/* 닫기 버튼 */
+.close-button {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+/* 첨부파일 테이블 */
+.attachment-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.attachment-table th,
+.attachment-table td {
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+}
+
+.attachment-table th {
+  text-align: left;
+  color: #6b7280;
+}
+
+.attachment-table td i {
+  margin-right: 6px;
+}
+
+/* 댓글 영역 */
+.comment-list {
+  margin-bottom: 16px;
+}
+
+.comment-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.comment-input {
+  flex: 1;
+  padding: 8px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.comment-submit-button {
+  padding: 8px 12px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.popup-content {
+  background-color: white;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.popup-content input,
+.popup-content textarea {
+  width: 100%;
+  padding: 8px;
+  font-size: 14px;
+}
+
+.popup-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

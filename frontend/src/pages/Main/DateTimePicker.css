@@ -1,0 +1,54 @@
+.datetime-picker {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 24px;
+  }
+  
+  .datetime-picker label {
+    font-weight: bold;
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+  
+  .datetime-inputs {
+    display: flex;
+    gap: 32px;
+  }
+  
+  .inputs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    width: 250px;
+  }
+  
+  .inputs input,
+  .inputs select {
+    width: 60px;
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  
+  .calendar {
+    flex-shrink: 0;
+  }
+  
+  /* react-calendar overrides (optional) */
+  .react-calendar {
+    border: none;
+    font-family: 'Pretendard', sans-serif;
+    font-size: 13px;
+    border-radius: 8px;
+  }
+  
+  .react-calendar__tile--active {
+    background: #1976d2;
+    color: white;
+  }
+  
+  .react-calendar__tile--now {
+    background: #e3f2fd;
+  }
