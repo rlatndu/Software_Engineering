@@ -4,8 +4,10 @@ import About from "../pages/About";
 import Landing from "../pages/Landing/Landing";
 import Login from "../pages/Login/Login"
 import Join from "../pages/Join/Join";
+import Site from "../pages/Site/Site"
 import Main from "../pages/Main/Main";
 import ProjectCreatePage from "../pages/Create/Project/project";
+import SiteCreatePage from "../pages/Create/Site/site";
 
 const AppRouter = () => {
     return(
@@ -16,8 +18,10 @@ const AppRouter = () => {
                 <Route path="/home" element={<Home />}/>
                 <Route path="/about" element={<About />}/>
                 <Route path="/join" element={<Join />}/>
+                <Route path='/site' element={<Site />}/>
                 <Route path="/Main" element={<Main />}/>
                 <Route path="/Create/Project" element={<ProjectCreatePage />}></Route>
+                 <Route path="/Create/Site" element={<SiteCreatePage />}></Route>
             </Routes>
         </BrowserRouter>
     );
