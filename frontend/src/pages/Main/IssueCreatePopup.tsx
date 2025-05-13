@@ -183,11 +183,14 @@ const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate }
           <div className="file-drop-area">첨부파일을 마우스로 끌어 놓아보세요.</div>
         </div>
 
-        <div className="popup-footer">
-          <div className="reporter">보고자 [작성자 이름(ID)]</div>
-          <div className="popup-buttons">
-            <button className="cancel-button" onClick={onClose}>취소</button>
-            <button className="create-button" onClick={handleSubmit}>만들기</button>
+        {/* JSX 구조 수정 */}
+        <div className="popup-footer right-align">
+          <div className="footer-actions">
+            <div className="reporter">보고자 [작성자 이름(ID)]</div>
+            <div className="popup-buttons">
+              <button className="cancel-button" onClick={onClose}>취소</button>
+              <button className="create-button" onClick={handleSubmit}>만들기</button>
+            </div>
           </div>
         </div>
       </div>
