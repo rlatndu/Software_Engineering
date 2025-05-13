@@ -22,7 +22,7 @@ const Login = () => {
     if(id == "admin" && password == "0000"){
       setLoginError(null);
       console.log("로그인 성공");
-      navigate("/site");
+      navigate("/main");
     }
     else{
       setLoginError("아이디 또는 비밀번호가 일치하지 않습니다.");

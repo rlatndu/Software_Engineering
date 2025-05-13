@@ -3,153 +3,19 @@ body, html {
   overflow-y: auto;
 }
 
-/* 전체 콘텐츠 래퍼 */
-.content-wrapper {
-  margin-left: 200px; /* ✅ 사이드바 너비만큼 여백 확보 */
+/* === 전체 레이아웃 === */
+.site-main-layout {
+  width: 100vw;
+  height: 100vh;
+  background-color: #ffffff;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.site-content-wrapper {
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
-
-.main-content {
-  flex-grow: 1;
-  padding: 24px;
-  box-sizing: border-box;
-  width: 100%;
-  overflow: visible;
-}
-
-/* ===== 사이드바 ===== */
-.sidebar {
-  width: 200px;
-  background-color: white;
-  border-right: 1px solid #e5e7eb;
-  display: flex;
-  flex-direction: column;
-  padding-top: 16px;
-  position: fixed;
-  top: 64px; /* 헤더 높이만큼 내려감 */
-  bottom: 0;
-  left: 0;
-}
-
-.sidebar-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-button:focus {
-  outline: none;
-}
-
-.tab-item-wrapper {
-  display: flex;
-  flex-direction: column;
-}
-
-.tab-item-with-plus {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.tab-button {
-  display: flex;
-  align-items: center;
-  text-align: left;
-  background: none;
-  border: none;
-  color: #000;
-  font-size: 13px;
-  cursor: pointer;
-  padding: 6px 12px;
-  border-radius: 0;
-  width: 100%;
-  margin: 0;
-}
-
-.tab-icon {
-  width: 15px;
-  height: 15px;
-  margin-right: 8px;
-  filter: grayscale(100%) brightness(0.6);
-  transition: filter 0.2s ease;
-}
-
-.tab-icon-active {
-  filter: invert(29%) sepia(86%) saturate(1647%) hue-rotate(211deg) brightness(95%) contrast(93%);
-}
-
-.tab-button:hover {
-  background-color: #f3f4f6;
-}
-
-.tab-plus-button:hover {
-  background-color: transparent !important;
-}
-
-.tab-item-with-plus:hover {
-  background-color: #f3f4f6;
-}
-
-.tab-button:hover {
-  background-color: transparent;
-}
-
-
-.tab-button-active {
-  background-color: #e0e7ff;
-  color: #3b82f6;
-  font-weight: 600;
-}
-
-.tab-plus-button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  margin-right: 8px;
-}
-
-.tab-plus-button img {
-  width: 14px;
-  height: 14px;
-  opacity: 0.6;
-  transition: opacity 0.2s ease;
-}
-
-.tab-plus-button:hover img {
-  opacity: 1;
-}
-
-.project-sublist {
-  margin-left: 16px;
-  margin-top: 4px;
-}
-
-.project-sublist-item {
-  padding: 2px 8px;
-  font-size: 13px;
-  background-color: transparent;
-  border: none;
-  color: #000;
-  cursor: pointer;
-}
-
-.project-sublist-item.active {
-  color: #3b82f6 !important;
-  font-weight: bold;
-}
-
-.tab-item-with-plus.tab-active {
-  background-color: #e0e7ff;
-}
-
-.tab-item-with-plus.tab-active .tab-plus-button img {
-  filter: invert(29%) sepia(86%) saturate(1647%) hue-rotate(211deg) brightness(95%) contrast(93%);
-  opacity: 1;
-}
-
 
 /* ===== 상단 헤더 ===== */
 .top-bar {
@@ -158,19 +24,19 @@ button:focus {
   top: 0;
   left: 0;
   right: 0;
-  height: 64px;
+  height: 4rem; /* 64px */
   background-color: white;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 0.0625rem solid #e5e7eb; /* 1px */
   display: flex;
   align-items: center;
-  padding: 0 24px;
+  padding: 0 1.5rem; /* 24px */
   z-index: 10;
 }
 
 .search-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 0.75rem; /* 12px */
   margin: 0 auto;
   position: relative;
   justify-content: center;
@@ -178,68 +44,126 @@ button:focus {
 }
 
 .search-input {
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  padding: 6px 12px;
-  font-size: 12px;
+  border: 0.0625rem solid #d1d5db; /* 1px */
+  border-radius: 0.25rem; /* 4px */
+  padding: 0.375rem 0.75rem; /* 6px 12px */
+  font-size: 0.75rem; /* 12px */
   flex: 1;
-  max-width: 600px;
+  max-width: 37.5rem; /* 600px */
   outline: none;
-  height: 32px;
+  height: 2rem; /* 32px */
   box-sizing: border-box;
   position: relative;
-  top: 3px;
+  top: 0.1875rem; /* 3px */
 }
 
 .create-button {
   background-color: #7e9dec;
   color: white;
-  font-size: 12px;
+  font-size: 0.75rem;
   border: none;
-  border-radius: 20px;
+  border-radius: 1.25rem; /* 20px */
   outline: none;
 }
 
 .icon-group {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 1.25rem; /* 20px */
   margin-left: auto;
 }
 
 .icon {
-  width: 20px;
-  height: 20px;
+  width: 1.25rem; /* 20px */
+  height: 1.25rem;
   color: #6b7280;
   cursor: pointer;
 }
 
-/* === 보드/백로그 탭 === */
-.project-subtabs {
-  display: flex;
-  gap: 8px;
-  margin-top: 20px;
-  border-bottom: 1px solid #e5e7eb;
-  padding-left: 8px;
+/* === 본문 영역 === */
+.site-main-content {
+  padding: 6rem; /* 96px 상하좌우 */
+  flex-grow: 1;
+  overflow-y: auto;
 }
 
-.project-subtabs button {
-  background: none;
-  border: none;
-  padding: 6px 12px;
-  font-size: 11px;
-  color: #4b5563;
-  cursor: pointer;
-  border-radius: 4px 4px 0 0;
-  transition: background-color 0.2s ease;
+.site-section {
+  margin-bottom: 3.75rem; /* 60px */
 }
 
-.project-subtabs button:hover {
-  background-color: #f3f4f6;
-}
-
-.project-subtabs button.active {
-  background-color: #e0e7ff; /* blue-100 */
-  color: #3b82f6; /* blue-600 */
+.section-title,
+.site-section-title {
+  font-size: 1.125rem; /* 18px */
   font-weight: 600;
+  border-bottom: 0.0625rem solid #e5e7eb;
+  padding-bottom: 0.5rem; /* 8px */
+  margin-bottom: 1.5rem; /* 24px */
+}
+
+/* === 빈 상태 === */
+.empty-site,
+.empty-recent {
+  text-align: center;
+  color: #6b7280;
+}
+
+.link {
+  color: #3b82f6;
+  text-decoration: underline;
+  margin: 0.5rem 0;
+  display: inline-block;
+  font-weight: 500;
+}
+
+.empty-site-image {
+  margin-top: 1rem;
+  width: 6rem; /* 96px */
+  height: auto;
+}
+
+/* === 사이트 카드 리스트 === */
+.site-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem; /* 16px */
+  margin-top: 1rem;
+}
+
+.site-card {
+  width: 13.75rem; /* 220px */
+  height: 11.25rem; /* 180px */
+  background-color: #f9fafb;
+  border: 0.0625rem solid #e5e7eb;
+  border-radius: 0.5rem; /* 8px */
+  padding: 0 1rem 1rem 1rem;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.card-text h3 {
+  font-size: 1rem; /* 16px */
+  color: #000;
+  margin-bottom: 0.375rem; /* 6px */
+}
+
+.card-text h4 {
+  font-size: 0.8125rem; /* 13px */
+  color: #000;
+  margin: 0;
+}
+
+.view-button {
+  background-color: #7e9dec;
+  color: white;
+  border: none;
+  padding: 0.375rem 0.75rem; /* 6px 12px */
+  border-radius: 0.25rem; /* 4px */
+  font-size: 0.75rem; /* 12px */
+  cursor: pointer;
+}
+
+.view-button:hover {
+  background-color: #2563eb;
 }

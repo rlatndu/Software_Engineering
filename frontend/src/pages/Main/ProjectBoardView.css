@@ -1,13 +1,14 @@
 /* 전체 보드 영역 */
 .project-board-view {
   display: flex;
-  gap: 16px;
-  padding: 0 24px 24px 24px;
-  min-height: 520px;
+  gap: 1vw;
+  padding: 0 1.5vw 1.5vw 1.5vw;
+  min-height: 32vh;
   border-radius: 0;
   align-items: flex-start;
-  margin-top: 5px;
-  height: calc(100vh - 270px);
+  margin-top: 0.5vh;
+  margin-right: 1vh;
+  height: calc(100vh - 27vh);
   overflow-x: auto;
   background-color: #ededed !important;
   box-shadow: none !important;
@@ -17,10 +18,10 @@
 /* 각 컬럼 */
 .board-column {
   flex: 0 0 auto;
-  width: 260px;
-  max-width: 260px;
-  border-radius: 8px;
-  padding: 16px 0;
+  width: 13vw;
+  max-width: 13vw;
+  border-radius: 0.5rem;
+  padding: 1rem 0;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -38,23 +39,23 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-  padding-bottom: 4px;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.25rem;
   border-bottom: 1px solid #d1d5db;
 }
 
 .board-title {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 14px;
+  gap: 0.375rem;
+  font-size: 0.875rem;
   font-weight: 500;
   color: #1f2937;
 }
 
 .column-icon {
-  width: 16px;
-  height: 16px;
+  width: 1rem;
+  height: 1rem;
   object-fit: contain;
 }
 
@@ -62,15 +63,13 @@
 .issue-card {
   background-color: white;
   border: 1px solid #d1d5db;
-  border-radius: 8px;
-  padding: 16px;
-  font-size: 14px;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  font-size: 0.875rem;
   color: #111827;
-  margin-bottom: 12px;
-  box-sizing: border-box;
+  margin-bottom: 0.75rem;
   user-select: none;
   cursor: grab;
-  z-index: auto;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -86,21 +85,20 @@
 /* 드롭다운 메뉴 */
 .dropdown-menu {
   position: absolute;
-  top: 38px;
-  right: 0px;
+  top: 2.375rem;
+  right: 0;
   background-color: white;
   border: 1px solid #d1d5db;
-  border-radius: 4px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  z-index: 9999; /* 충분히 높게 */
-  pointer-events: auto; /* ✅ 클릭 가능하도록 */
+  border-radius: 0.25rem;
+  box-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.1);
+  z-index: 9999;
 }
 
 .dropdown-menu button {
   background: none;
   border: none;
-  font-size: 13px;
-  padding: 8px 12px;
+  font-size: 0.8125rem;
+  padding: 0.5rem 0.75rem;
   width: 100%;
   text-align: left;
   cursor: pointer;
@@ -110,30 +108,30 @@
   background-color: #f3f4f6;
 }
 
-/* 이슈 카드 내부 이클립스 버튼 */
+/* 카드 우측 상단 버튼 */
 .card-menu-button {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 0.5rem;
+  right: 0.5rem;
   background-color: transparent;
   border: none;
   cursor: pointer;
-  padding: 4px;
+  padding: 0.25rem;
   z-index: 2;
 }
 
 .card-menu-button img {
-  width: 14px;
-  height: 14px;
+  width: 0.875rem;
+  height: 0.875rem;
 }
 
-/* 컬럼 상단 이클립스 버튼 */
+/* 컬럼 우측 상단 이클립스 버튼 */
 .add-button {
   background-color: transparent;
   border: none;
-  border-radius: 4px;
-  width: 32px;
-  height: 32px;
+  border-radius: 0.25rem;
+  width: 2rem;
+  height: 2rem;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -141,43 +139,44 @@
 }
 
 .add-button img {
-  width: 16px;
-  height: 16px;
+  width: 1rem;
+  height: 1rem;
 }
 
-/* 이슈 만들기 버튼 */
+/* 이슈 추가 버튼 */
 .create-issue-button,
 .board-column button.issue-add-button {
   background: none;
   border: none;
-  padding: 4px 8px;
-  font-size: 13px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8125rem;
   color: #4b5563;
   cursor: pointer;
   display: flex;
   align-items: center;
   align-self: flex-start;
-  margin-top: 4px;
+  margin-top: 0.25rem;
 }
 
-/* + 보드 컬럼 만들기 */
+/* 보드 컬럼 추가 버튼 */
 .add-column-button {
   background: none;
   border: none;
-  font-size: 20px;
+  font-size: 1.25rem;
   color: #000;
   cursor: pointer;
-  margin-left: 8px;
-  margin-top: 4px;
+  margin-left: 0.5rem;
+  margin-top: 0.25rem;
 }
 
 .droppable-area {
   flex-grow: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0.01rem;
 }
 
-/* 오버레이 전체 영역 */
+/* 오버레이 */
 .issue-detail-overlay {
   position: fixed;
   top: 0;
@@ -193,16 +192,17 @@
 
 /* 상세 패널 */
 .issue-detail-panel {
-  width: 90%;
-  height: 90%;
+  width: 90vw;
+  height: 90vh;
   background-color: white;
   display: flex;
-  border-radius: 4px;
+  border-radius: 0.25rem;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0.25rem 1.25rem rgba(0, 0, 0, 0.2);
   position: relative;
 }
 
+/* 상세 패널 상단 */
 .issue-header-row {
   display: flex;
   justify-content: space-between;
@@ -213,45 +213,37 @@
   background: none;
   border: none;
   cursor: pointer;
-  padding: 4px;
-  font-size: 20px;
+  padding: 0.25rem;
+  font-size: 1.25rem;
 }
 
-/* 좌측 본문 영역 */
+/* 본문 */
 .issue-main {
   flex: 3;
-  padding: 30px;
+  padding: 2rem;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 1.5rem;
   overflow-y: auto;
 }
 
-.issue-main h4 {
-  margin-bottom: 0px;
-}
-
-.issue-main p {
-  margin-top: 0;
-}
-
-/* 우측 사이드바 */
+/* 사이드 */
 .issue-sidebar {
-  flex: 0.5;
+  flex: 0.55;
   background-color: #f9fafb;
   border-left: 1px solid #e5e7eb;
-  padding: 24px;
+  padding: 1.5rem;
   overflow-y: auto;
 }
 
 /* 닫기 버튼 */
 .close-button {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 1rem;
+  right: 1rem;
   background: none;
   border: none;
-  font-size: 18px;
+  font-size: 1rem;
   cursor: pointer;
 }
 
@@ -259,12 +251,12 @@
 .attachment-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 .attachment-table th,
 .attachment-table td {
-  padding: 8px;
+  padding: 0.5rem;
   border-bottom: 1px solid #ddd;
 }
 
@@ -274,38 +266,39 @@
 }
 
 .attachment-table td i {
-  margin-right: 6px;
+  margin-right: 0.5rem;
 }
 
-/* 댓글 영역 */
+/* 댓글 */
 .comment-list {
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
 }
 
 .comment-input-wrapper {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
 .comment-input {
   flex: 1;
-  padding: 8px;
-  font-size: 14px;
+  padding: 0.5rem;
+  font-size: 0.875rem;
   border: 1px solid #ccc;
-  border-radius: 4px;
+  border-radius: 0.25rem;
 }
 
 .comment-submit-button {
-  padding: 8px 12px;
+  padding: 0.5rem 0.75rem;
   background-color: #3b82f6;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 0.25rem;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
+/* 팝업 */
 .popup-overlay {
   position: fixed;
   top: 0;
@@ -321,24 +314,24 @@
 
 .popup-content {
   background-color: white;
-  padding: 24px;
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-  width: 400px;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.2);
+  width: 25vw;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0.75rem;
 }
 
 .popup-content input,
 .popup-content textarea {
   width: 100%;
-  padding: 8px;
-  font-size: 14px;
+  padding: 0.5rem;
+  font-size: 0.875rem;
 }
 
 .popup-buttons {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 0.5rem;
 }

@@ -65,7 +65,7 @@ const Main = () => {
 
           return (
             <div key={tab.id} className="tab-item-wrapper">
-              {/* ✅ isActive일 때 tab-active 클래스 추가 */}
+              {/* isActive일 때 tab-active 클래스 추가 */}
               <div className={`tab-item-with-plus ${isActive ? 'tab-active' : ''}`}>
                 <button
                   onClick={() => setActiveTab(tab.id)}
@@ -79,7 +79,7 @@ const Main = () => {
                   {tab.label}
                 </button>
 
-                {/* ✅ 프로젝트 탭에만 + 버튼 표시 */}
+                {/* 프로젝트 탭에만 + 버튼 표시 */}
                 {tab.id === 'project' && (
                   <Link to="/Create/Project" className="tab-plus-button" title="프로젝트 만들기">
                     <img src="/assets/plus.png" alt="프로젝트 추가" />
@@ -88,7 +88,7 @@ const Main = () => {
               </div>
 
 
-                {/* ✅ 프로젝트 하위 목록은 항상 출력되도록 처리 */}
+                {/* 프로젝트 하위 목록은 항상 출력되도록 처리 */}
                 {tab.id === 'project' && (
                   <div className="project-sublist">
                     {mockProjects.map((project, index) => (

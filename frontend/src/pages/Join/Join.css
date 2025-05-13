@@ -1,192 +1,190 @@
 /* 전체 배경 */
 .login_container {
-    position: relative;
-    width: 100vw;
-    height: 100vh;
-    background-color: white;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-    font-family: 'Pretendard', sans-serif;
-  }
-  
-  /* 배경 도형 이미지  로그인 참고*/
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background-color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  font-family: 'Pretendard', sans-serif;
+}
 
-  /* 로그인 박스 */
-  .login_box {
-    position: relative;
-    z-index: 1;
-    width: 300px;
-    height: auto;
-    background-color: white;
-    padding: 50px 30px 80px 30px;
-    border-radius: 20px;
-    box-shadow: 0 4px 16px rgba(3, 45, 255, 0.2);
-  }
-  
-  /* 로고 영역 */
-  .slime_text {
-    text-align: center;
-    margin-bottom: 30px;
-  }
-  
-  .slime {
-    font-size: 35px;
-    font-weight: 700;
-    margin: 0;
-    color: #7e9dec;
-  }
-  
-  .logo_page_text {
-    font-size: 35px;
-    color: #000;
-  }
-  
-  /* Login */
-  .slime_text p {
-    font-size: 18px;
-    margin: 8px 0 0;
-    color: #000;
-  }
+/* 로그인 박스 */
+.login_box {
+  position: relative;
+  z-index: 1;
+  width: 20vw;
+  min-width: 260px;
+  max-width: 320px;
+  background-color: white;
+  padding: 3rem 2rem 5rem 2rem;
+  border-radius: 1.25rem;
+  box-shadow: 0 0.25rem 1rem rgba(3, 45, 255, 0.2);
+}
 
-  .error_text {
-    color: red;
-    font-size: 12px;
-    margin-top: 8px;
-    margin-bottom: 12px;
-    padding-left: 4px;
-  }
-  
-  /* input label */
-  label {
-    font-size: 14px;
-    font-weight: 500;
-    color: #6787ec;
-    margin-left: 10px;
-  }
-  
-  /* 입력창 스타일 */
-  input[type="text"],
-  input[type="password"],
-  input[type="email"] {
-    width: 100%;
-    padding: 12px 16px;
-    margin: 2px 0 10px 0;
-    border: 1px solid #ccc;
-    border-radius: 30px;
-    font-size: 14px;
-    box-sizing: border-box;
-  }
-  
+/* 로고 영역 */
+.slime_text {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.slime {
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin: 0;
+  color: #7e9dec;
+}
+
+.logo_page_text {
+  font-size: 2.2rem;
+  color: #000;
+}
+
+/* Login */
+.slime_text p {
+  font-size: 1.125rem;
+  margin: 0.5rem 0 0;
+  color: #000;
+}
+
+.error_text {
+  color: red;
+  font-size: 0.75rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding-left: 0.25rem;
+}
+
+/* input label */
+label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6787ec;
+  margin-left: 0.625rem;
+}
+
+/* 입력창 스타일 */
+input[type="text"],
+input[type="password"],
+input[type="email"] {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  margin: 0.125rem 0 0.625rem 0;
+  border: 1px solid #ccc;
+  border-radius: 2rem;
+  font-size: 0.875rem;
+  box-sizing: border-box;
+}
+
 /* 인증 받기 버튼 */
 .verify_btn {
-    line-height: 1;
-    border: none;
-    border-radius: 25px;
-    background-color: #a4baf8;
-    color: white;
-    font-size: 13px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-    white-space: nowrap;
-    height: 41px;
-  }
-  
-  .verify_btn:hover {
-    background-color: #7e9dec;
-  }
-  
+  line-height: 1;
+  border: none;
+  border-radius: 1.6rem;
+  background-color: #a4baf8;
+  color: white;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  white-space: nowrap;
+  height: 2.6rem;
+  padding: 0 1rem;
+}
 
-  /* 로그인 버튼 */
-  .login_page_button {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 30px;
-    background-color: #7e9dec;
-    color: white;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background-color 0.3s;
-  }
-  
-  .login_page_button:hover {
-    background-color: #4e6fd6;
-  }
-  
-  /* 구분선 */
-  .social_divider {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 16px;
-  }
-  
-  .line {
-    flex: 1;
-    height: 1px;
-    background-color: #ccc;
-  }
-  
-  .or-text {
-    padding: 0 10px;
-    font-size: 12px;
-    color: #777;
-  }
-  
-  /* SNS 버튼 공통 */
-  .sns_page_login {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 24px;
-  }
-  
-  .login_google_btn,
-  .login_naver_btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    width: 100%;
-    padding: 10px 14px;
-    border-radius: 30px;
-    font-size: 14px;
-    cursor: pointer;
-    border: 1px solid #ccc;
-    background-color: white;
-    transition: background-color 0.2s;
-  }
-  
-  .google_btn:hover,
-  .naver_btn:hover {
-    background-color: #f3f3f3;
-  }
-  
-  .googlelogo_png,
-  .naverlogo_png {
-    width: 18px;
-    height: 18px;
-  }
-  
-  /* 하단 링크 */
-  .long_links {
-    text-align: center;
-    font-size: 11px;
-    color: #6787ec;
-  }
-  
-  .long_links a {
-    color: #6787ec;
-    text-decoration: none;
-    margin: 0 4px;
-  }
-  
-  .long_links a:hover {
-    text-decoration: underline;
-  }
-  
+.verify_btn:hover {
+  background-color: #7e9dec;
+}
+
+/* 로그인 버튼 */
+.login_page_button {
+  width: 100%;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 2rem;
+  background-color: #7e9dec;
+  color: white;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.login_page_button:hover {
+  background-color: #4e6fd6;
+}
+
+/* 구분선 */
+.social_divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.line {
+  flex: 1;
+  height: 1px;
+  background-color: #ccc;
+}
+
+.or-text {
+  padding: 0 0.625rem;
+  font-size: 0.75rem;
+  color: #777;
+}
+
+/* SNS 버튼 공통 */
+.sns_page_login {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  margin-bottom: 1.5rem;
+}
+
+.login_google_btn,
+.login_naver_btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border-radius: 2rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  background-color: white;
+  transition: background-color 0.2s;
+}
+
+.google_btn:hover,
+.naver_btn:hover {
+  background-color: #f3f3f3;
+}
+
+.googlelogo_png,
+.naverlogo_png {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* 하단 링크 */
+.long_links {
+  text-align: center;
+  font-size: 0.688rem;
+  color: #6787ec;
+}
+
+.long_links a {
+  color: #6787ec;
+  text-decoration: none;
+  margin: 0 0.25rem;
+}
+
+.long_links a:hover {
+  text-decoration: underline;
+}

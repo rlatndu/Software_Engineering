@@ -21,7 +21,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 150px;
+  padding: 2.5vh 8vw;
   background-color: white;
 }
 
@@ -29,49 +29,49 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 0.8vw;
 }
 
 .logo_img {
-  height: 40px;
+  height: 2.5rem;
   width: auto;
-  margin-right: 8px;
+  margin-right: 0.8vw;
 }
 
 .logo_section h1 {
   display: flex;
   align-items: center;
-  font-size: 20px;
+  font-size: 1.2rem;
   font-weight: bold;
   margin: 0;
   color: #000;
 }
 
 .logo_text {
-  font-size: 20px;
+  font-size: 1.2rem;
   font-weight: bold;
   color: #7e9dec;
 }
 
 .auth_button button {
-  margin-left: 10px;
-  padding: 8px 16px;
+  margin-left: 0.8vw;
+  padding: 0.8vh 1.6vw;
   cursor: pointer;
   font-weight: bold;
 }
 
 .login_button {
-  font-size: 12px;
+  font-size: 0.7rem;
   background-color: transparent;
   color: #7e9dec;
-  border-radius: 20px;
+  border-radius: 10vw;
 }
 
 .join_button {
-  font-size: 12px;
+  font-size: 0.7rem;
   background-color: #7e9dec;
   color: white;
-  border-radius: 20px;
+  border-radius: 10vw;
 }
 
 /* 본문 */
@@ -86,10 +86,10 @@ body {
 }
 
 .landing_text h1 {
-  font-size: 36px;
+  font-size: 2rem;
   font-weight: 700;
   line-height: 1.5;
-  margin-bottom: 50px;
+  margin-bottom: 2vh;
   color: #000;
 }
 
@@ -98,37 +98,42 @@ body {
 }
 
 .landing_text p {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 0.95rem;
+  font-weight: 600;
   color: #000;
   line-height: 1.6;
 }
 
 /* 로그인 박스 */
 .landing_login {
-  width: 320px;
-  padding: 30px;
+  width: 21vw;
+  min-width: 260px;
+  padding: 2vh 1.5vw;
 }
 
-.landing_login * {
-  box-sizing: border-box;
+.landing_login {
+  width: 18vw;
+  min-width: 260px;
+  max-width: 320px;
+  padding: 2vh 1.2vw;
 }
 
 .landing_login label {
-  font-size: 14px;
+  font-size: 0.8rem;
   color: #7e9dec;
   font-weight: 600;
-  margin: 8px 0 0 15px;
+  margin: 0.8vh 0 0 0.5vw;
 }
 
 .landing_login input[type="text"],
 .landing_login input[type="password"] {
   width: 100%;
-  padding: 12px 20px;
-  margin-bottom: 10px;
+  padding: 0.75rem 1.2rem;
+  margin-bottom: 1vh;
   border: 1px solid #ccc;
-  border-radius: 20px;
+  border-radius: 10vw;
   outline: none;
+  font-size: 0.9rem;
 }
 
 .login_remember {
@@ -137,29 +142,27 @@ body {
 
 .login_remember label {
   line-height: 1;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
+  font-size: 0.7rem;
   color: #9b9b9b;
-  margin: 5px 0 15px 0;
-  padding-left: 10px;
-  padding-top: 5px;
+  margin: 0.4vh 0 1.5vh 0;
+  padding-left: 1vw;
+  padding-top: 0.3vh;
 }
 
 .login_remember input[type="checkbox"] {
-  transform: translateY(-1px); /* 미세 조정 */
+  transform: translateY(-1px);
 }
 
 .landing_login .login_button {
   width: 100%;
-  padding: 12px 12px;
+  padding: 0.75rem 0;
   background-color: #7e9dec;
   color: white;
   border: none;
-  border-radius: 24px;
+  border-radius: 12vw;
   font-weight: bold;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 0.95rem;
 }
 
 /* 또는 구분선 */
@@ -167,9 +170,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  margin: 20px 0;
-  font-size: 13px;
+  gap: 0.8vw;
+  margin: 2vh 0;
+  font-size: 0.75rem;
   color: #aaa;
 }
 
@@ -189,16 +192,18 @@ body {
 }
 
 .sns_login button {
-  display: flex;
   flex: 1;
+  display: flex;
   align-items: center;
-  gap: 6px;
-  margin: 0 5px;
+  justify-content: center;
+  gap: 0.5vw;
+  margin: 0 0.5vw;
   border: 1px solid #ddd;
-  border-radius: 20px;
+  border-radius: 10vw;
   background-color: white;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 0.85rem;
+  padding: 0.65rem 1rem;
 }
 
 .google_btn span {
@@ -213,36 +218,12 @@ body {
 .long_links {
   color: #4d6bff96;
   text-align: center;
-  font-size: 11px;
-  margin-top: 15px;
+  font-size: 0.65rem;
+  margin-top: 1.2vh;
 }
 
 .long_links a {
   color: #4d6bff96;
   text-decoration: none;
-  margin: 0 3px;
+  margin: 0 0.4vw;
 }
-  
-
-  /* 작은 화면 대응
-@media screen and (max-width: 768px) {
-    .landing_main {
-      flex-direction: column;
-      align-items: center;
-      padding: 5vw;
-    }
-  
-    .landing_text, .landing_login {
-      width: 100%;
-      max-width: 90vw;
-    }
-  
-    .landing_text h1 {
-      font-size: 1.8rem;
-      text-align: center;
-    }
-  
-    .landing_text p {
-      text-align: center;
-    }
-  } */

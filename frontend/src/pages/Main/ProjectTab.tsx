@@ -34,7 +34,7 @@ const ProjectTab: React.FC<ProjectTabProps> = ({ projects, selectedProjectIndex 
   }
   
 
-  // ✅ 유효하지 않은 인덱스에 대한 예외 처리
+  // 유효하지 않은 인덱스에 대한 예외 처리
   const selectedProject = projects[selectedProjectIndex];
 
 
