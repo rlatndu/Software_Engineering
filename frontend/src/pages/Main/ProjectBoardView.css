@@ -229,7 +229,7 @@
 
 /* 사이드 */
 .issue-sidebar {
-  flex: 0.55;
+  flex: 0.;
   background-color: #f9fafb;
   border-left: 1px solid #e5e7eb;
   padding: 1.5rem;

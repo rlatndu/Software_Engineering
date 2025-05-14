@@ -85,11 +85,11 @@ button:focus {
 }
 
 .tab-plus-button:hover {
-  background-color: transparent !important;
+  background-color: transparent;
 }
 
 .tab-item-with-plus:hover {
-  background-color: #f3f4f6;
+  background-color: #f3f4f6 !important;
 }
 
 .tab-button-active {
