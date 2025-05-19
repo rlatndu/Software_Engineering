@@ -23,7 +23,7 @@ html, body {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 5rem;
+  gap: 5rem; /* 80px → 5rem */
   z-index: 1;
 }
 
@@ -32,24 +32,32 @@ html, body {
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 62.5rem;
+  max-width: 62.5rem; /* 1000px */
 }
 
 /* 타이틀 */
 .form-title {
-  font-size: 1.5rem;
+  font-size: 1.5rem; /* 24px */
   font-weight: bold;
-  margin-bottom: 2.5rem;
+  margin-bottom: 0.75rem; /* 12px */
   text-align: left;
   color: #000;
+}
+
+/* 설명 텍스트 */
+.form-description {
+  font-size: 0.875rem; /* 14px */
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 2.5rem; /* 40px */
 }
 
 /* 폼 그룹 */
 .project-form {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  max-width: 50rem;
+  gap: 1.5rem; /* 24px */
+  max-width: 50rem; /* 800px */
 }
 
 .group {
@@ -57,16 +65,16 @@ html, body {
   flex-direction: row;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 0.75rem;
+  gap: 0.75rem; /* 12px */
   width: 100%;
 }
 
 .form-groups-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.75rem; /* 12px */
   flex: 1;
-  max-width: 32.5rem;
+  max-width: 32.5rem; /* 520px */
 }
 
 .form-group {
@@ -75,66 +83,51 @@ html, body {
 }
 
 .form-group label {
-  font-size: 0.875rem;
+  font-size: 0.875rem; /* 14px */
   font-weight: 600;
-  margin-bottom: 0.375rem;
+  margin-bottom: 0.375rem; /* 6px */
   color: #7e9dec;
 }
 
 /* 입력 필드 */
-.project-form input,
-.project-form select {
-  padding: 0.75rem 1.125rem;
-  border-radius: 1.5rem;
+.project-form input {
+  padding: 0.75rem 1.125rem; /* 12px 18px */
+  border-radius: 1.5rem; /* 24px */
   border: 1px solid #d1d5db;
-  font-size: 0.75rem;
+  font-size: 0.75rem; /* 12px */
   outline: none;
   transition: border-color 0.2s ease;
   width: 100%;
   box-sizing: border-box;
 }
 
-.project-form select {
-  padding-right: 2.5rem;
-}
-
-.project-form input:focus,
-.project-form select:focus {
+.project-form input:focus {
   border-color: #3b82f6;
-}
-
-/* 에러 텍스트 */
-.error-text {
-  font-size: 0.75rem;
-  color: red;
-  margin-top: 0.25rem;
-  margin-left: 0.5rem;
 }
 
 /* 버튼 영역 */
 .form-buttons {
   display: flex;
   justify-content: flex-end;
-  gap: 1rem;
-  margin-top: 2rem;
-  padding-top: 1.5rem;
+  gap: 1rem; /* 16px */
+  margin-top: 2rem; /* 32px */
+  padding-top: 1.5rem; /* 24px */
   border-top: 1px solid #e5e7eb;
 }
 
-/* 버튼 */
+/* 버튼 스타일 */
 button.cancel,
 button.submit {
-  padding: 0.5rem 2rem;
-  border-radius: 1.5rem;
-  border: 1px solid #ccc;
-  font-size: 0.75rem;
+  padding: 0.5rem 1.875rem; /* 8px 30px */
+  border-radius: 1.5rem; /* 24px */
+  font-size: 0.75rem; /* 12px */
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
 button.cancel {
   background-color: white;
-  padding: 0 1.6rem;
+  border: 1px solid #ccc;
 }
 
 button.cancel:hover {
@@ -180,19 +173,19 @@ button.submit:hover {
   top: -25vh;
   left: 40%;
   transform: translateX(-50%);
-  width: 33vw;
+  width: 33vw; /* 500px */
 }
 
 .shapes1 {
   position: absolute;
   bottom: -10vh;
   left: -2.5vw;
-  width: 27vw;
+  width: 27vw; /* 400px */
 }
 
 .shapes3 {
   position: absolute;
   bottom: -5vh;
   right: -13vw;
-  width: 33vw;
+  width: 33vw; /* 500px */
 }

@@ -16,7 +16,7 @@ const Landing = () => {
         }
         else{
             setLoginError(null);
-            navigate("/main");
+            navigate("/site");
         }
     }
 
