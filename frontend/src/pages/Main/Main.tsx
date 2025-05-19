@@ -48,7 +48,6 @@ const Main = () => {
           </div>
           <div className="search-actions">
             <input type="text" placeholder="검색" className="search-input" />
-            <button className="create-button">+ 이슈 만들기</button>
           </div>
           <div className="icon-group">
             <Bell className="icon" />

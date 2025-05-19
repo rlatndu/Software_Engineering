@@ -9,8 +9,8 @@ interface Site {
 }
 
 // 테스트용 데이터
-//const mockSites: Site[] = []; // 사이트 없을 때
- const mockSites: Site[] = [{ id: 1, name: "슬라임 개발팀" }, { id: 2, name: "백엔드팀" }];
+const mockSites: Site[] = []; // 사이트 없을 때
+ //const mockSites: Site[] = [{ id: 1, name: "슬라임 개발팀" }, { id: 2, name: "백엔드팀" }];
 
 const SitePage = () => {
   return (

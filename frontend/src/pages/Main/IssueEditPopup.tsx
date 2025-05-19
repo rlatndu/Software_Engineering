@@ -1,4 +1,4 @@
-// 팝업 상태 관리 및 수정 UI 예시 포함
+// 보드 이슈 수정 팝업
 import React, { useState } from 'react';
 
 interface IssueEditPopupProps {

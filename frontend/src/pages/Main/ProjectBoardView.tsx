@@ -84,7 +84,7 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
 
   const handleEdit = (issue: Issue) => {
     setMenuOpenIssue(null);
-    if (issue.assignee_id !== currentUserId) {
+    if (issue.assignee_id == currentUserId) {
       setPopup({
         type: 'accessDenied',
         payload: {
