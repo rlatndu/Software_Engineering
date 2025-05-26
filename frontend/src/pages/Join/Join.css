@@ -57,6 +57,14 @@
   padding-left: 0.25rem;
 }
 
+.success_text {
+  color: #52c41a;
+  font-size: 0.75rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding-left: 0.25rem;
+}
+
 /* input label */
 label {
   font-size: 0.875rem;

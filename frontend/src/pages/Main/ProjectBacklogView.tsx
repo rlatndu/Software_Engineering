@@ -1,27 +1,33 @@
 import React, { useState } from 'react';
 import './ProjectBacklogView.css';
+import BacklogIssueDetailPopup from './BacklogIssueDetailPopup';
 
-interface Project {
-  id: number;
-  name: string;
+interface ProjectBacklogViewProps {
+  project: {
+    id: number;
+    name: string;
+  };
 }
 
 interface Issue {
   id: number;
   title: string;
   status: string;
+  description?: string;
+  startDate?: string;
+  endDate?: string;
+  assignee?: string;
+  reporter: string;
 }
 
-interface ProjectBacklogViewProps {
-  project: Project;
-}
-
-const ProjectBacklogView: React.FC<ProjectBacklogViewProps> = ({ project }) => {
+const ProjectBacklogView: React.FC<ProjectBacklogViewProps> = () => {
   const [isCreatingIssue, setIsCreatingIssue] = useState(false);
   const [newIssueTitle, setNewIssueTitle] = useState('');
   const [issues, setIssues] = useState<Issue[]>([]);
   const [editingIssueId, setEditingIssueId] = useState<number | null>(null);
   const [editedTitle, setEditedTitle] = useState('');
+  const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   const handleCreateClick = () => {
     setIsCreatingIssue(true);
@@ -35,6 +41,7 @@ const ProjectBacklogView: React.FC<ProjectBacklogViewProps> = ({ project }) => {
       id: Date.now(),
       title: newIssueTitle.trim(),
       status: 'To Do',
+      reporter: '작성자 이름(ID)' // 임시 작성자
     };
     setIssues([...issues, newIssue]);
     setIsCreatingIssue(false);
@@ -67,6 +74,24 @@ const ProjectBacklogView: React.FC<ProjectBacklogViewProps> = ({ project }) => {
     setEditedTitle('');
   };
 
+  const handleIssueClick = (issue: Issue) => {
+    setSelectedIssue(issue);
+    setIsDetailOpen(true);
+  };
+
+  const handleDetailClose = () => {
+    setSelectedIssue(null);
+    setIsDetailOpen(false);
+  };
+
+  const handleDeleteIssue = () => {
+    if (!selectedIssue) return;
+    if (!window.confirm('정말 이 이슈를 삭제하시겠습니까?')) return;
+    setIssues(issues.filter((i) => i.id !== selectedIssue.id));
+    setIsDetailOpen(false);
+    setSelectedIssue(null);
+  };
+
   return (
     <div className="project-backlog-view">
       <div className="backlog-column">
@@ -84,7 +109,7 @@ const ProjectBacklogView: React.FC<ProjectBacklogViewProps> = ({ project }) => {
         )}
 
         {issues.map((issue) => (
-          <div key={issue.id} className="issue-item">
+          <div key={issue.id} className="issue-item" onClick={() => handleIssueClick(issue)}>
             <div className="issue-status"><i>{issue.status}</i></div>
 
             {editingIssueId === issue.id ? (
@@ -110,7 +135,10 @@ const ProjectBacklogView: React.FC<ProjectBacklogViewProps> = ({ project }) => {
             ) : (
               <div
                 className="issue-title"
-                onDoubleClick={() => handleEditStart(issue.id, issue.title)}
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  handleEditStart(issue.id, issue.title);
+                }}
               >
                 {issue.title}
               </div>
@@ -152,6 +180,15 @@ const ProjectBacklogView: React.FC<ProjectBacklogViewProps> = ({ project }) => {
         </div>
         <button className="b-create-button">+ 스프린트 만들기</button>
       </div>
+
+      {isDetailOpen && selectedIssue && (
+        <BacklogIssueDetailPopup
+          issue={selectedIssue}
+          onClose={handleDetailClose}
+          onEdit={() => alert('편집 기능은 다음 단계에서 구현됩니다.')}
+          onDelete={handleDeleteIssue}
+        />
+      )}
     </div>
   );
 };

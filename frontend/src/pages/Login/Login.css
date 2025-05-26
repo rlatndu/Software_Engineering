@@ -195,18 +195,18 @@ input[type="password"] {
 }
 
 /* 하단 링크 */
-.long_links {
+.login_links {
   text-align: center;
   font-size: 0.7rem;
   color: #6787ec;
 }
 
-.long_links a {
+.login_links a {
   color: #6787ec;
   text-decoration: none;
   margin: 0 0.25rem;
 }
 
-.long_links a:hover {
+.login_links a:hover {
   text-decoration: underline;
 }

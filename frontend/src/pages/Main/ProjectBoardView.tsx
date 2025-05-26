@@ -32,7 +32,7 @@ interface Issue {
   assignee_name?: string;
 }
 
-const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
+const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ }) => {
   const [columns, setColumns] = useState([
     { id: 1, title: 'To Do', icon: '/assets/todo.png' },
     { id: 2, title: 'In Progress', icon: '/assets/inprogress.png' },
@@ -229,16 +229,17 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
                         <span>{col.title}</span>
                         <img src={col.icon} alt={col.title} className="column-icon" />
                       </div>
-                      <button className="add-button" onClick={() => toggleColumnMenu(col.id)}>
-                        <img src="/assets/ellipsis.png" alt="menu" />
-                      </button>
-                      {menuOpenColumn === col.id && (
-                      <div className="dropdown-menu issue-dropdown-menu" ref={issueDropdownRef}>
-                        <button className="dropdown-edit-button">수정</button>
-                        <button className="dropdown-delete-button">삭제</button>
+                      <div className="menu-container">
+                        <button className="add-button" onClick={() => toggleColumnMenu(col.id)}>
+                          <img src="/assets/ellipsis.png" alt="menu" />
+                        </button>
+                        {menuOpenColumn === col.id && (
+                          <div className="dropdown-menu" ref={columnDropdownRef}>
+                            <button>수정</button>
+                            <button className="delete">삭제</button>
+                          </div>
+                        )}
                       </div>
-                      
-                      )}
                     </div>
 
                     <Droppable droppableId={col.id.toString()} type="issue">
@@ -258,21 +259,23 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
                                     <div className="issue-title">{issue.title}</div>
                                     <div className="issue-due">마감일: {issue.end_date}</div>
                                   </div>
-                                  <button
-                                    className="card-menu-button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setMenuOpenIssue(menuOpenIssue === issue.id ? null : issue.id);
-                                    }}
-                                  >
-                                    <img src="/assets/ellipsis.png" alt="card menu" />
-                                  </button>
-                                  {menuOpenIssue === issue.id && (
-                                    <div className="dropdown-menu issue-dropdown-menu" ref={issueDropdownRef} onClick={(e) => e.stopPropagation()}>
-                                      <button onClick={() => handleEdit(issue)}>수정</button>
-                                      <button onClick={() => handleDelete(issue)}>삭제</button>
-                                    </div>
-                                  )}
+                                  <div className="menu-container">
+                                    <button
+                                      className="card-menu-button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setMenuOpenIssue(menuOpenIssue === issue.id ? null : issue.id);
+                                      }}
+                                    >
+                                      <img src="/assets/ellipsis.png" alt="card menu" />
+                                    </button>
+                                    {menuOpenIssue === issue.id && (
+                                      <div className="dropdown-menu" ref={issueDropdownRef} onClick={(e) => e.stopPropagation()}>
+                                        <button onClick={() => handleEdit(issue)}>수정</button>
+                                        <button className="delete" onClick={() => handleDelete(issue)}>삭제</button>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               )}
                             </Draggable>
@@ -293,59 +296,59 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
               <img src="/assets/plus.png" alt="add column" />
             </button>
 
-            {selectedIssue && (
-              <div className="issue-detail-overlay" onClick={() => setSelectedIssue(null)}>
-                <div className="issue-detail-panel" onClick={(e) => e.stopPropagation()}>
-                  <button className="close-button" onClick={() => setSelectedIssue(null)}>✕</button>
+              {selectedIssue && (
+                <div className="issue-detail-overlay" onClick={() => setSelectedIssue(null)}>
+                  <div className="issue-detail-panel" onClick={(e) => e.stopPropagation()}>
+                    <button className="close-button" onClick={() => setSelectedIssue(null)}>✕</button>
 
-                  {/* 좌측 본문 영역 */}
-                  <div className="issue-main">
-                  <div className="issue-header-row">
-                    <h2 className="issue-title">[ {selectedIssue.title} ]</h2>
-                    <button className="detail-ellipsis"><img src="/assets/ellipsis.png" alt="menu" /></button>
-                  </div>
+                    {/* 좌측 본문 영역 */}
+                    <div className="issue-main">
+                    <div className="issue-header-row">
+                      <h2 className="issue-title">[ {selectedIssue.title} ]</h2>
+                      <button className="detail-ellipsis"><img src="/assets/ellipsis.png" alt="menu" /></button>
+                    </div>
 
-                    <h4>설명</h4>
-                    <p>{selectedIssue.description}</p>
+                      <h4>설명</h4>
+                      <p>{selectedIssue.description}</p>
 
-                    <h4>첨부파일</h4>
-                    <table className="attachment-table">
-                      <thead>
-                        <tr>
-                          <th>이름</th>
-                          <th>크기</th>
-                          <th>추가된 날짜</th>
-                          <th></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td><i className="icon">🖼</i>[이미지 이름].png</td>
-                          <td>36 KB</td>
-                          <td>2025-03-21 15:21</td>
-                          <td><button>⬇</button></td>
-                        </tr>
-                        <tr>
-                          <td><i className="icon">📎</i>[파일 이름].pdf</td>
-                          <td>154 KB</td>
-                          <td>2025-03-21 15:21</td>
-                          <td><button>⬇</button></td>
-                        </tr>
-                      </tbody>
-                    </table>
+                      <h4>첨부파일</h4>
+                      <table className="attachment-table">
+                        <thead>
+                          <tr>
+                            <th>이름</th>
+                            <th>크기</th>
+                            <th>추가된 날짜</th>
+                            <th></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td><i className="icon">🖼</i>[이미지 이름].png</td>
+                            <td>36 KB</td>
+                            <td>2025-03-21 15:21</td>
+                            <td><button>⬇</button></td>
+                          </tr>
+                          <tr>
+                            <td><i className="icon">📎</i>[파일 이름].pdf</td>
+                            <td>154 KB</td>
+                            <td>2025-03-21 15:21</td>
+                            <td><button>⬇</button></td>
+                          </tr>
+                        </tbody>
+                      </table>
 
-                    <h4>댓글</h4>
-                    <div className="comment-list">
-                      <div className="comment">
-                        <strong>[댓글 작성자 ID]</strong> <span className="comment-date">작성 날짜</span>
-                        <p>[댓글 내용 주저리주저리]</p>
+                      <h4>댓글</h4>
+                      <div className="comment-list">
+                        <div className="comment">
+                          <strong>[댓글 작성자 ID]</strong> <span className="comment-date">작성 날짜</span>
+                          <p>[댓글 내용 주저리주저리]</p>
+                        </div>
+                      </div>
+                      <div className="comment-input-wrapper">
+                        <input className="comment-input" placeholder="댓글 작성..." />
+                        <button className="comment-submit-button">보내기</button>
                       </div>
                     </div>
-                    <div className="comment-input-wrapper">
-                      <input className="comment-input" placeholder="댓글 작성..." />
-                      <button className="comment-submit-button">보내기</button>
-                    </div>
-                  </div>
 
                   {/* 우측 사이드 영역 */}
                   <div className="issue-sidebar">

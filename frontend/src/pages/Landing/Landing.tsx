@@ -1,24 +1,75 @@
-import React, {useState} from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
+import authService from "../../api/authService";
 import './Landing.css'; // 스타일 관리
 
 const Landing = () => {
     const navigate = useNavigate(); // 버튼 클릭하면 해당 페이지 이동용
 
-    const [id, setId] = useState("") // 아이디 입력값
-    const [password,setPassword] = useState("") // 비밀번호 입력값
-    const [loginError, setLoginError] = useState<string | null>(null); // 에러 메시지 상태태
+    const [identifier, setIdentifier] = useState(""); // 아이디 또는 이메일 입력값
+    const [password, setPassword] = useState(""); // 비밀번호 입력값
+    const [error, setError] = useState("");
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [rememberMe, setRememberMe] = useState(false);
 
-    const handleJoin = () => {
-        if(!id.trim() || !password.trim()){
-            setLoginError("아이디와 비밀번호를 모두 입력해주세요.");
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsProcessing(true);
+        setError("");
+
+        try {
+            // 클라이언트 측 유효성 검사
+            if (!identifier.trim()) {
+                setError("아이디 또는 이메일을 입력해주세요.");
+                setIsProcessing(false);
+                return;
+            }
+
+            if (!password.trim()) {
+                setError("비밀번호를 입력해주세요.");
+                setIsProcessing(false);
+                return;
+            }
+
+            const response = await authService.login({
+                identifier,
+                password,
+                rememberMe
+            });
+
+            // 로그인 성공 여부 확인
+            if (response && response.token) {
+                // 로그인 성공 시 사이트 목록 페이지로 이동
+                navigate('/site');
+            } else {
+                // 토큰이 없는 경우
+                throw new Error("로그인 응답이 올바르지 않습니다.");
+            }
+            
+        } catch (error: any) {
+            console.error('Landing login error:', error);
+            
+            // 서버로부터 받은 에러 메시지 처리
+            const errorMessage = error.response?.data || error.message;
+            
+            // 특정 에러 메시지에 따른 사용자 친화적인 메시지 설정
+            if (errorMessage.includes("이메일 인증이 필요합니다")) {
+                setError("이메일 인증이 필요합니다. 회원가입 시 받은 인증 메일을 확인해주세요.");
+            } 
+            else if (errorMessage.includes("비밀번호를 잘못 입력했습니다") || errorMessage.includes("올바르지 않습니다")) {
+                setError("아이디 또는 비밀번호가 올바르지 않습니다.");
+            }
+            else if (errorMessage.includes("등록되지 않은 아이디")) {
+                setError("등록되지 않은 아이디입니다. 회원가입 후 이용해주세요.");
+            }
+            else {
+                setError("로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+            }
+        } finally {
+            setIsProcessing(false);
         }
-        else{
-            setLoginError(null);
-            navigate("/site");
-        }
-    }
+    };
 
     return (
         <div className="landing_container">
@@ -47,53 +98,71 @@ const Landing = () => {
                 </section>
 
                 <section className="landing_login">
-                    <label htmlFor="id">ID</label><br />
-                    <input
-                        id="id"
-                        type="text"
-                        placeholder="ID를 입력하세요"
-                        value={id}
-                        onChange={(e) => setId(e.target.value)}/>
-                    <br />
-                    <label htmlFor="password">PASSWARD</label><br />
-                    <input
-                        id="password"
-                        type="password"
-                        placeholder="passward를 입력하세요"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}/>
+                    <form onSubmit={handleLogin}>
+                        <label htmlFor="identifier">ID 또는 이메일</label><br />
+                        <input
+                            id="identifier"
+                            type="text"
+                            placeholder="ID 또는 이메일을 입력하세요"
+                            value={identifier}
+                            onChange={(e) => setIdentifier(e.target.value)}
+                            disabled={isProcessing}
+                        />
+                        <br />
+                        <label htmlFor="password">비밀번호</label><br />
+                        <input
+                            id="password"
+                            type="password"
+                            placeholder="비밀번호를 입력하세요"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            disabled={isProcessing}
+                        />
 
-                    {loginError && <p className="error_text">{loginError}</p>}
-                    
-                    <div className="login_remember">
-                        <input type="checkbox" id="remember"/>
-                        <label htmlFor="remember">로그인 유지</label>
-                    </div>
+                        {error && <p className="error_text">{error}</p>}
+                        
+                        <div className="login_remember">
+                            <input 
+                                type="checkbox" 
+                                id="remember"
+                                checked={rememberMe}
+                                onChange={(e) => setRememberMe(e.target.checked)}
+                                disabled={isProcessing}
+                            />
+                            <label htmlFor="remember">로그인 유지</label>
+                        </div>
 
-                    <button className="login_button" onClick={handleJoin}>Login</button>
-
-                    <div className="social_divider">
-                        <span className="line" />
-                        <span className="or-text">또는</span>
-                        <span className="line" />
-                    </div>
-
-                    <div className="sns_login">
-                        <button className="login_google_btn">
-                            <img src="/assets/icon_logo_google.png" alt="Google Logo" className="googlelogo_png" />
-                            <span>Google</span>
+                        <button 
+                            type="submit" 
+                            className="login_button"
+                            disabled={isProcessing}
+                        >
+                            {isProcessing ? "처리 중..." : "Login"}
                         </button>
-                        <button className="login_naver_btn">
-                            <img src="/assets/icon_logo_never.png" alt="Naver Logo" className="naverlogo_png" />
-                            <span>Naver</span>
-                        </button>
-                    </div>
 
-                    <div className="long_links">
-                        <Link to="/join">회원가입</Link> | 
-                        <Link to="/id_find"> 아이디 찾기</   Link> | 
-                        <Link to="/passward_find"> 비밀번호 찾기</Link>
-                    </div>
+                        <div className="social_divider">
+                            <span className="line" />
+                            <span className="or-text">또는</span>
+                            <span className="line" />
+                        </div>
+
+                        <div className="sns_login">
+                            <button type="button" className="login_google_btn" disabled={isProcessing}>
+                                <img src="/assets/icon_logo_google.png" alt="Google Logo" className="googlelogo_png" />
+                                <span>Google</span>
+                            </button>
+                            <button type="button" className="login_naver_btn" disabled={isProcessing}>
+                                <img src="/assets/icon_logo_never.png" alt="Naver Logo" className="naverlogo_png" />
+                                <span>Naver</span>
+                            </button>
+                        </div>
+
+                        <div className="login_links">
+                            <Link to="/join">회원가입</Link> | 
+                            <Link to="/id_find"> 아이디 찾기</Link> | 
+                            <Link to="/password_find"> 비밀번호 찾기</Link>
+                        </div>
+                    </form>
                 </section>
             </main>
 

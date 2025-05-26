@@ -8,13 +8,13 @@ html, body {
 }
 
 /* 전체 페이지 컨테이너 */
-.project-create-page {
-  position: relative;
+.site-create-page {
   width: 100vw;
   height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
+  position: relative;
   overflow: hidden;
 }
 
@@ -101,47 +101,69 @@ html, body {
   box-sizing: border-box;
 }
 
-.project-form input:focus {
-  border-color: #3b82f6;
+.site-form input:focus {
+  outline: none;
+  border-color: #007AFF;
+}
+
+.site-form input:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.error-text {
+  color: #ff3b30;
+  font-size: 14px;
+  margin-top: 8px;
 }
 
 /* 버튼 영역 */
 .form-buttons {
   display: flex;
   justify-content: flex-end;
-  gap: 1rem; /* 16px */
-  margin-top: 2rem; /* 32px */
-  padding-top: 1.5rem; /* 24px */
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
   border-top: 1px solid #e5e7eb;
 }
 
 /* 버튼 스타일 */
-button.cancel,
-button.submit {
-  padding: 0.5rem 1.875rem; /* 8px 30px */
-  border-radius: 1.5rem; /* 24px */
-  font-size: 0.75rem; /* 12px */
+.cancel-button,
+.submit-button {
+  padding: 0.625rem 1.25rem;
+  border-radius: 1.875rem;
+  font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
+  min-width: 6.25rem;
+  text-align: center;
 }
 
-button.cancel {
-  background-color: white;
-  border: 1px solid #ccc;
+.cancel-button {
+  background-color: transparent;
+  border: 1px solid #007AFF;
+  color: #007AFF;
 }
 
-button.cancel:hover {
-  background-color: #f3f4f6;
+.cancel-button:hover {
+  background-color: rgba(0, 122, 255, 0.1);
 }
 
-button.submit {
-  background-color: #3b82f6;
-  color: white;
+.submit-button {
+  background-color: #007AFF;
   border: none;
+  color: white;
 }
 
-button.submit:hover {
-  background-color: #2563eb;
+.submit-button:hover {
+  background-color: #0056b3;
+}
+
+.cancel-button:disabled,
+.submit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* 캐릭터 이미지 */

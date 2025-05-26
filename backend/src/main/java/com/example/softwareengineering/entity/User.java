@@ -1,42 +1,47 @@
 package com.example.softwareengineering.entity;
 
 import jakarta.persistence.*;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class User {
-
-    public enum Role {
-        ADMIN, PM, MEMBER
-    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 255)
+    @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(name = "password_hash", nullable = false, length = 255)
+    @Column(nullable = false)
     private String password;
 
-    @Column(nullable = false, length = 100)
-    private String name;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Role role = Role.MEMBER;
-
-    @Column(name = "email_verified", nullable = false)
+    @Builder.Default
     private boolean emailVerified = false;
+
+    private String profileImage;
 
     @Column(name = "created_at", updatable = false, insertable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "verification_token")
+    @Column(name = "verification_token", length = 100)
     private String verificationToken;
+
+    @Column(name = "user_id", nullable = false, unique = true, length = 50)
+    private String userId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private MemberRole role = MemberRole.MEMBER;
 
     // --- Getter / Setter ---
     public Long getId() { return id; }
@@ -47,12 +52,6 @@ public class User {
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-
-    public Role getRole() { return role; }
-    public void setRole(Role role) { this.role = role; }
-
     public boolean isEmailVerified() { return emailVerified; }
     public void setEmailVerified(boolean emailVerified) { this.emailVerified = emailVerified; }
 
@@ -60,4 +59,14 @@ public class User {
 
     public String getVerificationToken() { return verificationToken; }
     public void setVerificationToken(String verificationToken) { this.verificationToken = verificationToken; }
+
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
+
+    public String getProfileImage() {
+        return profileImage;
+    }
+
+    public MemberRole getRole() { return role; }
+    public void setRole(MemberRole role) { this.role = role; }
 }

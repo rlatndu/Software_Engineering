@@ -85,7 +85,7 @@
   padding-left: 0.5rem;
 }
 
-.recommend-subtab-button {
+.subtab-button {
   background: none;
   border: none;
   padding: 0.5rem 0.75rem;
@@ -96,11 +96,11 @@
   transition: background-color 0.2s ease;
 }
 
-.recommend-subtab-button:hover {
+.subtab-button:hover {
   background-color: #f3f4f6;
 }
 
-.recommend-subtab-button.active {
+.subtab-button.active {
   background-color: #e0e7ff;
   color: #3b82f6;
   font-weight: 600;
@@ -145,7 +145,7 @@
   margin: 0;
 }
 
-.project-card button {
+.view-button {
   background-color: #7e9dec;
   color: white;
   border: none;
@@ -153,4 +153,32 @@
   border-radius: 0.25rem;
   font-size: 0.75rem;
   cursor: pointer;
+  text-decoration: none;
+  text-align: center;
 }
+
+/* .view-button:hover {
+  background-color: #6b8ae0;
+}
+
+/* 로딩 및 에러 상태 */
+.loading, .error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 1rem;
+  color: #4b5563;
+}
+
+.error {
+  color: #ef4444;
+}
+
+/* 사이트 이름 */
+.site-name {
+  margin-left: 1rem;
+  font-size: 1rem;
+  color: #4b5563;
+  font-weight: 500;
+} */

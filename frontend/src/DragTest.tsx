@@ -1,64 +1,60 @@
-import React, { useState } from 'react';
-import {
-  DragDropContext,
-  Droppable,
-  Draggable,
-  DropResult,
-} from 'react-beautiful-dnd';
+import { useState } from 'react';
 
 const DragTest = () => {
   const [items, setItems] = useState([
-    { id: 'item-1', content: '🍕 피자' },
-    { id: 'item-2', content: '🍔 햄버거' },
-    { id: 'item-3', content: '🍜 라면' },
+    { id: 1, content: 'Item 1' },
+    { id: 2, content: 'Item 2' },
+    { id: 3, content: 'Item 3' },
   ]);
 
-  const onDragEnd = (result: DropResult) => {
-    if (!result.destination) return;
+  const handleDragStart = (e: React.DragEvent, id: number) => {
+    e.dataTransfer.setData('text/plain', id.toString());
+  };
 
-    const newItems = Array.from(items);
-    const [moved] = newItems.splice(result.source.index, 1);
-    newItems.splice(result.destination.index, 0, moved);
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
 
+  const handleDrop = (e: React.DragEvent, targetId: number) => {
+    e.preventDefault();
+    const draggedId = parseInt(e.dataTransfer.getData('text/plain'));
+    
+    if (draggedId === targetId) return;
+
+    const newItems = [...items];
+    const draggedIndex = items.findIndex(item => item.id === draggedId);
+    const targetIndex = items.findIndex(item => item.id === targetId);
+    
+    const [draggedItem] = newItems.splice(draggedIndex, 1);
+    newItems.splice(targetIndex, 0, draggedItem);
+    
     setItems(newItems);
   };
 
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
-      <Droppable droppableId="droppable">
-        {(provided) => (
+    <div>
+      <h2>드래그 앤 드롭 테스트</h2>
+      <div style={{ padding: '20px' }}>
+        {items.map(item => (
           <div
-            {...provided.droppableProps}
-            ref={provided.innerRef}
-            style={{ padding: 16, background: '#f4f4f4', width: 300, minHeight: 200 }}
+            key={item.id}
+            draggable
+            onDragStart={(e) => handleDragStart(e, item.id)}
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDrop(e, item.id)}
+            style={{
+              padding: '10px',
+              margin: '5px',
+              border: '1px solid #ccc',
+              backgroundColor: '#f9f9f9',
+              cursor: 'move'
+            }}
           >
-            {items.map((item, index) => (
-              <Draggable key={item.id} draggableId={item.id} index={index}>
-                {(provided) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.draggableProps}
-                    {...provided.dragHandleProps}
-                    style={{
-                      userSelect: 'none',
-                      padding: 16,
-                      margin: '0 0 8px 0',
-                      background: '#fff',
-                      border: '1px solid #ddd',
-                      borderRadius: 4,
-                      ...provided.draggableProps.style,
-                    }}
-                  >
-                    {item.content}
-                  </div>
-                )}
-              </Draggable>
-            ))}
-            {provided.placeholder}
+            {item.content}
           </div>
-        )}
-      </Droppable>
-    </DragDropContext>
+        ))}
+      </div>
+    </div>
   );
 };
 
