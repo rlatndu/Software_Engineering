@@ -41,7 +41,7 @@ public class MailService {
                     <div style="margin: 30px 0;">
                         <a href="%s" style="background-color: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px;">이메일 인증하기</a>
                     </div>
-                    <p>이 링크는 30분 동안만 유효합니다.</p>
+                    <p>이 링크는 1시간 동안만 유효합니다.</p>
                     <p>감사합니다.</p>
                 </div>
                 """, verificationLink);

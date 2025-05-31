@@ -1,21 +1,16 @@
 import React, { useState } from 'react';
-import ProjectBoardView from './ProjectBoardView.tsx';
-import ProjectBacklogView from './ProjectBacklogView';
 import { Link } from 'react-router-dom';
-
-
-interface Project {
-  id: number;
-  name: string;
-}
+import ProjectBoardView from './ProjectBoardView';
+import ProjectBacklogView from './ProjectBacklogView';
+import { Project } from '../../types/project';
 
 interface ProjectTabProps {
-    projects: Project[];
-    selectedProjectIndex: number;
-    setSelectedProjectIndex: (index: number) => void;
-  }
+  projects: Project[];
+  selectedProjectIndex: number;
+  setSelectedProjectIndex: (index: number) => void;
+}
 
-const ProjectTab: React.FC<ProjectTabProps> = ({ projects, selectedProjectIndex }) => {
+const ProjectTab: React.FC<ProjectTabProps> = ({ projects, selectedProjectIndex, setSelectedProjectIndex }) => {
   const [viewTab, setViewTab] = useState<'board' | 'backlog'>('board');
 
   if (projects.length === 0) {
@@ -32,17 +27,14 @@ const ProjectTab: React.FC<ProjectTabProps> = ({ projects, selectedProjectIndex 
       </div>
     );
   }
-  
 
   // 유효하지 않은 인덱스에 대한 예외 처리
   const selectedProject = projects[selectedProjectIndex];
-
 
   return (
     <div className="project-tab">
       <div className="section-header">
         <h2 className="section-title">[{selectedProject.name}]</h2>
-        {/*<img src="/assets/ellipsis.png" alt="삭제/수정" />*/}
       </div>
 
       <div className="project-subtabs">
@@ -62,10 +54,9 @@ const ProjectTab: React.FC<ProjectTabProps> = ({ projects, selectedProjectIndex 
 
       {viewTab === 'board' ? (
         <ProjectBoardView project={selectedProject} />
-        ) : (
+      ) : (
         <ProjectBacklogView project={selectedProject} />
-        )}
-
+      )}
     </div>
   );
 };

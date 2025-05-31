@@ -1,8 +1,11 @@
 // 이슈 생성 팝업창
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DateRange } from 'react-date-range';
 import { ko } from 'date-fns/locale';
+import { useAuth } from '../../contexts/AuthContext';
+import { projectService, ProjectMember } from '../../api/projectService';
+import axios from 'axios';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
 import './IssueCreatePopup.css';
@@ -10,13 +13,20 @@ import './IssueCreatePopup.css';
 interface IssueCreatePopupProps {
   onClose: () => void;
   onCreate: (newIssue: any) => void;
+  selectedColumn: string;
+  projectId: number;
+  projectName: string;  // 프로젝트 이름 prop 추가
+  initialStatus: string;
 }
 
-const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate }) => {
+const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate, selectedColumn, projectId, projectName, initialStatus }) => {
+  const { user } = useAuth();
+  const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([]);
   const [form, setForm] = useState({
     title: '',
     description: '',
-    status: 'TODO',
+    status: initialStatus,
+      //  status: initialStatus || 'TODO',
     assigneeId: '',
     assigneeName: '',
     startTime: { ampm: '오전', hour: '', minute: '' },
@@ -29,18 +39,60 @@ const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate }
     key: 'selection',
   });
 
+  // 프로젝트 멤버 목록 가져오기
+  useEffect(() => {
+    const fetchProjectMembers = async () => {
+      try {
+        const members = await projectService.getProjectMembers(projectId);
+        setProjectMembers(members);
+      } catch (error) {
+        console.error('프로젝트 멤버 목록 조회 실패:', error);
+      }
+    };
+
+    fetchProjectMembers();
+  }, [projectId]);
+
   const handleSubmit = () => {
     if (!form.title.trim()) {
       alert('제목은 필수입니다.');
       return;
     }
 
+    if (!form.assigneeId) {
+      alert('담당자를 선택해주세요.');
+      return;
+    }
+
+    // 시작 시간과 종료 시간 설정
+    const startDate = new Date(range.startDate);
+    const endDate = new Date(range.endDate);
+
+    if (form.startTime.hour && form.startTime.minute) {
+      const hour = parseInt(form.startTime.hour) + (form.startTime.ampm === '오후' ? 12 : 0);
+      startDate.setHours(hour);
+      startDate.setMinutes(parseInt(form.startTime.minute));
+    }
+
+    if (form.endTime.hour && form.endTime.minute) {
+      const hour = parseInt(form.endTime.hour) + (form.endTime.ampm === '오후' ? 12 : 0);
+      endDate.setHours(hour);
+      endDate.setMinutes(parseInt(form.endTime.minute));
+    }
+
     const newIssue = {
-      ...form,
-      id: Date.now(),
-      startDate: range.startDate,
-      endDate: range.endDate,
+      title: form.title.trim(),
+      description: form.description.trim(),
+      status: form.status,
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      columnId: parseInt(selectedColumn),
+      assigneeId: form.assigneeId,
+      reporterId: user?.userId,
+      order: 0  // orderIndex를 order로 변경
     };
+
+    console.log('Submitting new issue:', newIssue);
     onCreate(newIssue);
   };
 
@@ -67,10 +119,13 @@ const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate }
         </div>
 
         <div className="form-group">
-          <label>프로젝트 *</label>
-          <select defaultValue="">
-            <option disabled>[프로젝트 이름]</option>
-          </select>
+          <label>프로젝트</label>
+          <input
+            type="text"
+            value={projectName}
+            disabled
+            className="disabled-input"
+          />
         </div>
 
         <div className="form-group">
@@ -79,9 +134,14 @@ const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate }
             value={form.status}
             onChange={(e) => setForm({ ...form, status: e.target.value })}
           >
-            <option value="TODO">To Do</option>
-            <option value="IN_PROGRESS">In Progress</option>
-            <option value="DONE">Done</option>
+            <option value="TODO">TODO</option>
+            <option value="IN_PROGRESS">IN PROGRESS</option>
+            <option value="DONE">DONE</option>
+            {form.status !== 'TODO' && 
+             form.status !== 'IN_PROGRESS' && 
+             form.status !== 'DONE' && (
+              <option value={form.status}>{form.status}</option>
+            )}
           </select>
         </div>
 
@@ -171,13 +231,24 @@ const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate }
         </div>
 
         <div className="form-group">
-          <label>담당자</label>
-          <input
-            type="text"
-            placeholder="[지정된 담당자 이름]"
-            value={form.assigneeName}
-            onChange={(e) => setForm({ ...form, assigneeName: e.target.value })}
-          />
+          <label>담당자 *</label>
+          <select
+            value={form.assigneeId}
+            onChange={(e) => {
+              const selectedMember = projectMembers.find(member => member.userId === e.target.value);
+              setForm(prev => ({
+                ...prev,
+                assigneeId: e.target.value
+              }));
+            }}
+          >
+            <option value="">담당자를 선택하세요</option>
+            {projectMembers.map(member => (
+              <option key={member.userId} value={member.userId}>
+                {member.name} [{member.userId}]
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="form-group">
@@ -185,10 +256,9 @@ const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate }
           <div className="file-drop-area">첨부파일을 마우스로 끌어 놓아보세요.</div>
         </div>
 
-        {/* JSX 구조 수정 */}
         <div className="popup-footer right-align">
           <div className="footer-actions">
-            <div className="reporter">보고자 [작성자 이름(ID)]</div>
+            <div className="reporter">보고자: {user?.userId}</div>
             <div className="popup-buttons">
               <button className="cancel-button" onClick={onClose}>취소</button>
               <button className="create-button" onClick={handleSubmit}>만들기</button>

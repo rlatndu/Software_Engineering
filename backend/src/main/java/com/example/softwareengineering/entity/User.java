@@ -38,11 +38,6 @@ public class User {
     @Column(name = "user_id", nullable = false, unique = true, length = 50)
     private String userId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    @Builder.Default
-    private MemberRole role = MemberRole.MEMBER;
-
     // --- Getter / Setter ---
     public Long getId() { return id; }
 
@@ -66,7 +61,4 @@ public class User {
     public String getProfileImage() {
         return profileImage;
     }
-
-    public MemberRole getRole() { return role; }
-    public void setRole(MemberRole role) { this.role = role; }
 }

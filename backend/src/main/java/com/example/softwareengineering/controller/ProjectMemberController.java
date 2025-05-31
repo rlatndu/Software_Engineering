@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @Tag(name = "프로젝트 멤버 관리", description = "프로젝트 멤버 초대/역할변경/삭제 API")
@@ -81,5 +82,15 @@ public class ProjectMemberController {
     ) {
         String result = projectMemberService.removeMember(projectId, userId, removerId);
         return Map.of("message", result);
+    }
+
+    @Operation(summary = "프로젝트 멤버 목록 조회", description = "프로젝트의 모든 멤버 목록을 조회합니다.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "조회 성공"),
+        @ApiResponse(responseCode = "404", description = "프로젝트 없음")
+    })
+    @GetMapping("/{projectId}/members")
+    public List<Map<String, String>> getProjectMembers(@PathVariable Long projectId) {
+        return projectMemberService.getProjectMembers(projectId);
     }
 } 

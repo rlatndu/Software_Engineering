@@ -18,12 +18,22 @@ public class CustomIssueStatus {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private String name;
+
+    @Column(length = 100)
+    private String description;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id", nullable = false)
     private Project project;
+
+    @Column(nullable = false)
+    private Integer orderIndex;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean isActive = true;
 
     @Builder.Default
     @OneToMany(mappedBy = "customStatus")

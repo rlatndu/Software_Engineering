@@ -1,32 +1,20 @@
 import React, { useState } from 'react';
 import './ProjectBacklogView.css';
 import BacklogIssueDetailPopup from './BacklogIssueDetailPopup';
+import { Project } from '../../types/project';
+import { BacklogIssue } from '../../types/issue';
 
 interface ProjectBacklogViewProps {
-  project: {
-    id: number;
-    name: string;
-  };
+  project: Project;
 }
 
-interface Issue {
-  id: number;
-  title: string;
-  status: string;
-  description?: string;
-  startDate?: string;
-  endDate?: string;
-  assignee?: string;
-  reporter: string;
-}
-
-const ProjectBacklogView: React.FC<ProjectBacklogViewProps> = () => {
+const ProjectBacklogView: React.FC<ProjectBacklogViewProps> = ({ project }) => {
   const [isCreatingIssue, setIsCreatingIssue] = useState(false);
   const [newIssueTitle, setNewIssueTitle] = useState('');
-  const [issues, setIssues] = useState<Issue[]>([]);
+  const [issues, setIssues] = useState<BacklogIssue[]>([]);
   const [editingIssueId, setEditingIssueId] = useState<number | null>(null);
   const [editedTitle, setEditedTitle] = useState('');
-  const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
+  const [selectedIssue, setSelectedIssue] = useState<BacklogIssue | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   const handleCreateClick = () => {
@@ -37,11 +25,15 @@ const ProjectBacklogView: React.FC<ProjectBacklogViewProps> = () => {
   const handleConfirm = () => {
     if (newIssueTitle.trim() === '') return;
 
-    const newIssue: Issue = {
+    const newIssue: BacklogIssue = {
       id: Date.now(),
       title: newIssueTitle.trim(),
       status: 'To Do',
-      reporter: '작성자 이름(ID)' // 임시 작성자
+      reporter: '작성자 이름(ID)', // 임시 작성자
+      projectId: project.id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      order: issues.length
     };
     setIssues([...issues, newIssue]);
     setIsCreatingIssue(false);
@@ -74,7 +66,7 @@ const ProjectBacklogView: React.FC<ProjectBacklogViewProps> = () => {
     setEditedTitle('');
   };
 
-  const handleIssueClick = (issue: Issue) => {
+  const handleIssueClick = (issue: BacklogIssue) => {
     setSelectedIssue(issue);
     setIsDetailOpen(true);
   };

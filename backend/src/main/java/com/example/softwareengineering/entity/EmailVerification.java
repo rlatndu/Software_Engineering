@@ -5,8 +5,8 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "email_verification",
-    uniqueConstraints = {
-        @UniqueConstraint(name = "uk_email_verification_email", columnNames = "email")
+    indexes = {
+        @Index(name = "idx_email_verification_email", columnList = "email")
     }
 )
 public class EmailVerification {

@@ -21,8 +21,10 @@ import com.example.softwareengineering.dto.MessageResponse;
 import com.example.softwareengineering.dto.IdFindResponse;
 import com.example.softwareengineering.service.EmailService;
 import com.example.softwareengineering.dto.PasswordResetRequest;
+import org.springframework.http.CacheControl;
 
 import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -43,9 +45,16 @@ public class AuthController {
         @ApiResponse(responseCode = "200", description = "회원가입 성공"),
         @ApiResponse(responseCode = "400", description = "잘못된 요청")
     })
-    public ResponseEntity<Map<String, String>> signup(@Valid @RequestBody SignupRequestDto dto) {
-        String result = authService.signup(dto);
-        return ResponseEntity.ok(Map.of("message", result));
+    public ResponseEntity<?> signup(@RequestBody @Valid SignupRequestDto dto) {
+        try {
+            Map<String, Object> result = authService.signup(dto);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", e.getMessage()
+            ));
+        }
     }
 
     @PostMapping("/verify/send")
@@ -68,8 +77,22 @@ public class AuthController {
     })
     public ResponseEntity<Map<String, Object>> verifyEmail(@RequestBody Map<String, String> request) {
         String token = request.get("token");
-        Map<String, Object> result = authService.verifyEmail(token);
-        return ResponseEntity.ok(result);
+        logger.info("이메일 인증 요청 수신. 토큰: {}", token);
+        
+        if (token == null || token.trim().isEmpty()) {
+            logger.error("토큰이 비어있거나 null입니다");
+            throw new IllegalArgumentException("토큰이 필요합니다");
+        }
+        
+        try {
+            logger.debug("인증 서비스 호출 시작");
+            Map<String, Object> result = authService.verifyEmail(token);
+            logger.info("이메일 인증 성공. 응답: {}", result);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            logger.error("이메일 인증 실패. 토큰: {}, 에러: {}", token, e.getMessage(), e);
+            throw e;
+        }
     }
 
     @GetMapping("/check")
@@ -124,34 +147,160 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/find-id/send-code")
-    public ResponseEntity<MessageResponse> sendIdFindCode(@RequestBody IdFindRequest request) {
-        emailService.sendIdFindVerificationCode(request.getEmail());
-        return ResponseEntity.ok(new MessageResponse("인증 코드가 이메일로 발송되었습니다."));
+    @PostMapping("/find-id/send")
+    @Operation(summary = "아이디 찾기 이메일 발송", description = "아이디 찾기를 위한 인증번호를 이메일로 발송합니다.")
+    public ResponseEntity<MessageResponse> sendIdFindEmail(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        emailService.sendIdFindVerificationEmail(email);
+        return ResponseEntity.ok(new MessageResponse("인증번호가 이메일로 발송되었습니다."));
     }
 
-    @PostMapping("/find-id/verify-code")
-    public ResponseEntity<IdFindResponse> verifyIdFindCode(@RequestBody IdFindRequest request) {
-        String userId = authService.findUserIdByEmailAndCode(request.getEmail(), request.getCode());
+    @PostMapping("/find-id/verify")
+    @Operation(summary = "아이디 찾기 인증", description = "이메일로 발송된 인증번호를 검증하고 아이디를 반환합니다.")
+    public ResponseEntity<IdFindResponse> verifyIdFindCode(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String code = request.get("code");
+        String userId = authService.findUserIdByEmailAndCode(email, code);
         return ResponseEntity.ok(new IdFindResponse(userId, "아이디를 찾았습니다."));
     }
 
-    @PostMapping("/password/send-code")
-    public ResponseEntity<MessageResponse> sendPasswordResetCode(@RequestBody Map<String, String> request) {
-        String identifier = request.get("identifier");
-        emailService.sendPasswordResetCode(identifier);
-        return ResponseEntity.ok(new MessageResponse("인증 코드가 이메일로 발송되었습니다."));
+    @PostMapping("/password/send")
+    @Operation(summary = "비밀번호 재설정 이메일 발송", description = "비밀번호 재설정을 위한 인증번호를 이메일로 발송합니다.")
+    public ResponseEntity<MessageResponse> sendPasswordResetEmail(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        emailService.sendPasswordResetEmail(email);
+        return ResponseEntity.ok(new MessageResponse("인증번호가 이메일로 발송되었습니다."));
     }
 
-    @PostMapping("/password/verify-code")
-    public ResponseEntity<MessageResponse> verifyPasswordResetCode(@RequestBody PasswordResetRequest request) {
-        authService.verifyPasswordResetCode(request.getIdentifier(), request.getCode());
-        return ResponseEntity.ok(new MessageResponse("인증되었습니다."));
+    @PostMapping("/password/verify")
+    @Operation(summary = "비밀번호 재설정 인증", description = "이메일로 발송된 인증번호를 검증합니다.")
+    public ResponseEntity<Map<String, Object>> verifyPasswordResetCode(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String code = request.get("code");
+        
+        logger.info("비밀번호 재설정 인증번호 검증 요청 수신. 이메일: {}", email);
+        
+        try {
+            boolean isVerified = authService.verifyPasswordResetCode(email, code);
+            logger.info("비밀번호 재설정 인증번호 검증 결과. 이메일: {}, 인증 여부: {}", email, isVerified);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", isVerified);
+            response.put("message", isVerified ? "인증되었습니다." : "인증번호가 일치하지 않습니다.");
+            response.put("email", email);
+            response.put("verified", isVerified);
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .header("Pragma", "no-cache")
+                .header("Expires", "0")
+                .body(response);
+            
+        } catch (IllegalArgumentException e) {
+            logger.error("비밀번호 재설정 인증 실패. 이메일: {}, 에러: {}", email, e.getMessage());
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            response.put("email", email);
+            response.put("verified", false);
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.badRequest()
+                .cacheControl(CacheControl.noStore())
+                .header("Pragma", "no-cache")
+                .header("Expires", "0")
+                .body(response);
+            
+        } catch (Exception e) {
+            logger.error("비밀번호 재설정 인증 처리 중 오류 발생. 이메일: {}, 에러: {}", email, e.getMessage(), e);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "인증 처리 중 오류가 발생했습니다.");
+            response.put("email", email);
+            response.put("verified", false);
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.internalServerError()
+                .cacheControl(CacheControl.noStore())
+                .header("Pragma", "no-cache")
+                .header("Expires", "0")
+                .body(response);
+        }
     }
 
     @PostMapping("/password/reset")
-    public ResponseEntity<MessageResponse> resetPassword(@RequestBody PasswordResetRequest request) {
-        authService.resetPassword(request.getIdentifier(), request.getCode(), request.getNewPassword());
+    @Operation(summary = "비밀번호 재설정", description = "인증된 코드로 새 비밀번호를 설정합니다.")
+    public ResponseEntity<MessageResponse> resetPasswordWithCode(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String code = request.get("code");
+        String newPassword = request.get("newPassword");
+        
+        if (email == null || code == null || newPassword == null) {
+            throw new IllegalArgumentException("필수 정보가 누락되었습니다.");
+        }
+
+        // 코드 재검증
+        if (!authService.verifyPasswordResetCode(email, code)) {
+            return ResponseEntity.badRequest()
+                .body(new MessageResponse("유효하지 않은 인증번호입니다. 다시 시도해주세요."));
+        }
+
+        authService.resetPasswordWithCode(email, code, newPassword);
         return ResponseEntity.ok(new MessageResponse("비밀번호가 변경되었습니다."));
+    }
+
+    @PostMapping("/password/change")
+    @Operation(summary = "비밀번호 변경", description = "현재 비밀번호 확인 후 새 비밀번호로 변경합니다.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "비밀번호 변경 성공"),
+        @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+        @ApiResponse(responseCode = "401", description = "인증 실패")
+    })
+    public ResponseEntity<MessageResponse> changePassword(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String currentPassword = request.get("currentPassword");
+        String newPassword = request.get("newPassword");
+
+        if (email == null || currentPassword == null || newPassword == null) {
+            throw new IllegalArgumentException("필수 정보가 누락되었습니다.");
+        }
+
+        authService.changePassword(email, currentPassword, newPassword);
+        return ResponseEntity.ok(new MessageResponse("비밀번호가 변경되었습니다."));
+    }
+
+    @PostMapping("/verify-token")
+    @Operation(summary = "토큰 검증", description = "JWT 토큰의 유효성을 검증합니다")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "토큰 검증 성공"),
+        @ApiResponse(responseCode = "401", description = "유효하지 않은 토큰")
+    })
+    public ResponseEntity<Map<String, Object>> verifyToken(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        try {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of(
+                        "success", false,
+                        "message", "토큰이 없거나 유효하지 않습니다."
+                    ));
+            }
+
+            String token = authHeader.substring(7);
+            boolean isValid = authService.verifyToken(token);
+
+            return ResponseEntity.ok(Map.of(
+                "success", isValid,
+                "message", isValid ? "유효한 토큰입니다." : "유효하지 않은 토큰입니다."
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of(
+                    "success", false,
+                    "message", "토큰 검증에 실패했습니다."
+                ));
+        }
     }
 }

@@ -31,11 +31,22 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
+import java.util.HashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import com.example.softwareengineering.exception.CustomException;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.headers.Header;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 @Tag(name = "이슈 관리", description = "이슈 생성, 수정, 삭제, 첨부파일, 하위이슈 등 이슈 관련 API")
 @RestController
-@RequestMapping("/api/issues")
+@RequestMapping("/api/projects/{projectId}/issues")
 public class IssueController {
+    private static final Logger log = LoggerFactory.getLogger(IssueController.class);
+
     @Autowired
     private IssueService issueService;
     @Autowired
@@ -45,15 +56,27 @@ public class IssueController {
     @Autowired
     private SubIssueService subIssueService;
 
-    @Operation(summary = "이슈 생성", description = "프로젝트 관리자만 이슈를 생성할 수 있습니다.")
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "이슈 생성 성공"),
-        @ApiResponse(responseCode = "400", description = "잘못된 요청")
-    })
     @PostMapping
-    public ResponseEntity<IssueResponse> createIssue(@RequestBody IssueCreateRequest request, @RequestParam Long userId) {
-        IssueResponse response = issueService.createIssue(request, userId);
-        return ResponseEntity.ok(response);
+    @Operation(summary = "이슈 생성", description = "새로운 이슈를 생성합니다.")
+    public ResponseEntity<?> createIssue(
+            @Parameter(description = "프로젝트 ID") @PathVariable Long projectId,
+            @Parameter(description = "이슈 생성 정보") @RequestBody IssueCreateRequest request) {
+        try {
+            log.info("이슈 생성 요청: projectId={}, request={}", projectId, request);
+            request.setProjectId(projectId);  // URL의 projectId를 request에 설정
+            IssueResponse response = issueService.createIssue(request);
+            return ResponseEntity.ok(response);
+        } catch (CustomException e) {
+            log.error("이슈 생성 실패: {}", e.getMessage());
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        } catch (Exception e) {
+            log.error("이슈 생성 중 오류 발생", e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "서버 내부 오류가 발생했습니다.");
+            return ResponseEntity.internalServerError().body(error);
+        }
     }
 
     @Operation(summary = "프로젝트별 이슈 목록 조회", description = "projectId로 해당 프로젝트의 이슈 목록을 조회합니다.")
@@ -61,10 +84,24 @@ public class IssueController {
         @ApiResponse(responseCode = "200", description = "조회 성공"),
         @ApiResponse(responseCode = "404", description = "프로젝트 없음")
     })
-    @GetMapping
-    public ResponseEntity<List<IssueResponse>> getIssuesByProject(@RequestParam Long projectId, @RequestParam Long userId) {
-        List<IssueResponse> issues = issueService.getIssuesByProject(projectId, userId);
-        return ResponseEntity.ok(issues);
+    @GetMapping("/list")
+    public ResponseEntity<?> getIssuesByProject(
+            @Parameter(description = "프로젝트 ID") @PathVariable Long projectId) {
+        try {
+            log.info("이슈 목록 조회 요청: projectId={}", projectId);
+            List<IssueResponse> issues = issueService.getIssuesByProject(projectId);
+            return ResponseEntity.ok(issues);
+        } catch (CustomException e) {
+            log.error("이슈 목록 조회 실패: {}", e.getMessage());
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        } catch (Exception e) {
+            log.error("이슈 목록 조회 중 오류 발생", e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "서버 내부 오류가 발생했습니다.");
+            return ResponseEntity.internalServerError().body(error);
+        }
     }
 
     @Operation(summary = "이슈 수정", description = "이슈 담당자만 수정할 수 있습니다.")

@@ -1,10 +1,12 @@
 package com.example.softwareengineering.repository;
 
 import com.example.softwareengineering.entity.Project;
+import com.example.softwareengineering.entity.ProjectMember;
 import com.example.softwareengineering.entity.Site;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -19,4 +21,8 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     @Modifying
     @Query("DELETE FROM Project p WHERE p.site = :site")
     void deleteBySite(Site site);
+
+    @Modifying
+    @Query("DELETE FROM ProjectMember pm WHERE pm.project.id = :projectId")
+    void deleteProjectMembers(@Param("projectId") Long projectId);
 } 

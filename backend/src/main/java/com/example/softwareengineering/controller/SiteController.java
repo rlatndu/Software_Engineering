@@ -141,4 +141,45 @@ public class SiteController {
         
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/{siteId}/visit")
+    @Operation(summary = "사이트 방문 기록", description = "사이트 방문을 기록합니다.")
+    public ResponseEntity<Map<String, Object>> recordVisit(
+            @PathVariable Long siteId,
+            @RequestParam Long userId) {
+        try {
+            siteService.recordSiteVisit(siteId, userId);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "사이트 방문이 기록되었습니다.");
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    @GetMapping("/recent")
+    @Operation(summary = "최근 방문한 사이트 목록 조회", description = "사용자가 최근 방문한 사이트 목록을 조회합니다.")
+    public ResponseEntity<Map<String, Object>> getRecentSites(@RequestParam Long userId) {
+        try {
+            List<Site> recentSites = siteService.getRecentSites(userId);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", recentSites);
+            response.put("message", "최근 방문한 사이트 목록을 성공적으로 조회했습니다.");
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
 } 

@@ -2,6 +2,7 @@ import { Bell, Settings, User, MoreVertical } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import siteService, { Site } from "../../api/siteService";
+import { recentSiteService } from "../../api/recentSiteService";
 import "./Site.css";
 
 const SitePage = () => {
@@ -42,7 +43,7 @@ const SitePage = () => {
       setSites(mySites || []);
 
       // 최근 방문한 사이트 목록 조회
-      const recentVisited = await siteService.getRecentSites();
+      const recentVisited = recentSiteService.getRecentSites();
       setRecentSites(recentVisited);
     } catch (err: any) {
       console.error("Error fetching sites:", err);
@@ -75,6 +76,11 @@ const SitePage = () => {
       console.error("Error deleting site:", err);
       setDeleteError(err.message);
     }
+  };
+
+  // 사이트 방문 처리 함수
+  const handleSiteVisit = (site: Site) => {
+    recentSiteService.addRecentSite(site);
   };
 
   if (isLoading) {
@@ -165,7 +171,11 @@ const SitePage = () => {
                             )}
                           </div>
                         </div>
-                        <Link to={`/main/${site.id}`} className="view-button">
+                        <Link 
+                          to={`/sites/${site.id}/main`} 
+                          className="view-button"
+                          onClick={() => handleSiteVisit(site)}
+                        >
                           사이트 보기
                         </Link>
                       </div>
@@ -188,7 +198,11 @@ const SitePage = () => {
                           <h3>사이트</h3>
                           <h4>{site.name}</h4>
                         </div>
-                        <Link to={`/main/${site.id}`} className="view-button">
+                        <Link 
+                          to={`/sites/${site.id}/main`} 
+                          className="view-button"
+                          onClick={() => handleSiteVisit(site)}
+                        >
                           사이트 보기
                         </Link>
                       </div>

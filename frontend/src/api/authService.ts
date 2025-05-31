@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { UserRole } from '../types/role';
 
 interface ApiResponse<T = any> {
     success: boolean;
@@ -13,7 +14,9 @@ interface LoginResponse extends ApiResponse {
         id: number;
         email: string;
         userId: string;
+        siteRoles: { [key: number]: string };  // key: siteId, value: role
     };
+    message?: string;
 }
 
 interface SignupRequest {
@@ -39,23 +42,37 @@ interface MessageResponse {
 }
 
 interface PasswordResetRequest {
-    identifier: string;
-    code?: string;
-    newPassword?: string;
+    email: string;
+    code: string;
+    newPassword: string;
 }
 
-const BASE_URL = 'http://localhost:8080/api';
+const BASE_URL = 'http://localhost:8081/api';
+
+// axios 기본 설정
+axios.defaults.withCredentials = true;
 
 const authService = {
     signup: async (data: SignupRequest): Promise<ApiResponse> => {
         try {
-            const response = await axios.post<ApiResponse>(`${BASE_URL}/auth/signup`, data);
+            const response = await axios.post<ApiResponse>(
+                `${BASE_URL}/auth/signup`,
+                data,
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    withCredentials: true
+                }
+            );
             return {
                 success: true,
                 message: response.data.message,
                 data: response.data.data
             };
         } catch (error: any) {
+            console.error('Signup error:', error.response?.data || error);
             return {
                 success: false,
                 message: error.response?.data?.message || "회원가입에 실패했습니다."
@@ -98,6 +115,8 @@ const authService = {
 
     login: async (data: LoginRequest): Promise<LoginResponse> => {
         try {
+            console.log('Login request:', { identifier: data.identifier, rememberMe: data.rememberMe });
+            
             const response = await axios.post<LoginResponse>(
                 `${BASE_URL}/auth/login`,
                 {
@@ -107,27 +126,57 @@ const authService = {
                 }
             );
 
-            if (response.data.token) {
-                localStorage.removeItem('token');
-                sessionStorage.removeItem('token');
-                localStorage.removeItem('user');
-                sessionStorage.removeItem('user');
+            console.log('Login response:', {
+                success: true,
+                hasToken: !!response.data.token,
+                hasUser: !!response.data.user
+            });
 
-                const storage = data.rememberMe ? localStorage : sessionStorage;
-                storage.setItem('token', response.data.token);
-                if (response.data.user) {
-                    console.log('Login response user data:', response.data.user);
-                    storage.setItem('user', JSON.stringify(response.data.user));
-                }
+            if (!response.data.token) {
+                throw new Error('서버에서 토큰을 받지 못했습니다.');
+            }
+
+            // 기존 데이터 초기화
+            localStorage.removeItem('token');
+            sessionStorage.removeItem('token');
+            localStorage.removeItem('user');
+            sessionStorage.removeItem('user');
+
+            // 새로운 데이터 저장
+            const storage = data.rememberMe ? localStorage : sessionStorage;
+            
+            // 토큰 저장 및 설정
+            storage.setItem('token', response.data.token);
+            axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+            console.log('Token stored in storage:', storage.getItem('token'));
+            console.log('Token set in axios headers:', axios.defaults.headers.common['Authorization']);
+
+            if (response.data.user) {
+                const userWithEnumRole = {
+                    ...response.data.user,
+                    id: response.data.user.id,
+                    userId: response.data.user.userId,
+                    name: response.data.user.userId,
+                    roles: {
+                        siteRole: response.data.user.siteRoles ? Object.values(response.data.user.siteRoles)[0] : undefined,
+                        projectRoles: {}
+                    }
+                };
+                console.log('Storing user data:', userWithEnumRole);
+                storage.setItem('user', JSON.stringify(userWithEnumRole));
+
+                // 로그인 성공 후 사이트 페이지로 이동
+                window.location.href = '/site';
+
                 return {
                     success: true,
                     token: response.data.token,
-                    user: response.data.user,
+                    user: userWithEnumRole,
                     message: response.data.message || '로그인이 완료되었습니다.'
                 };
-            } else {
-                throw new Error('토큰이 없습니다.');
             }
+
+            throw new Error('사용자 정보를 받지 못했습니다.');
         } catch (error: any) {
             console.error('Login error details:', {
                 status: error.response?.status,
@@ -135,16 +184,16 @@ const authService = {
                 message: error.message
             });
             
-            if (error.response?.data?.message) {
-                return {
-                    success: false,
-                    message: error.response.data.message
-                };
-            }
+            // 에러 발생 시 인증 정보 초기화
+            localStorage.removeItem('token');
+            sessionStorage.removeItem('token');
+            localStorage.removeItem('user');
+            sessionStorage.removeItem('user');
+            delete axios.defaults.headers.common['Authorization'];
             
             return {
                 success: false,
-                message: '로그인 중 오류가 발생했습니다.'
+                message: error.response?.data?.message || error.message || '로그인 중 오류가 발생했습니다.'
             };
         }
     },
@@ -170,12 +219,26 @@ const authService = {
     },
 
     requestPasswordReset: async (email: string): Promise<ApiResponse> => {
-        const response = await axios.post<ApiResponse>(`${BASE_URL}/auth/password/send-code`, { identifier: email });
+        const response = await axios.post<ApiResponse>(`${BASE_URL}/auth/password/send`, { email });
         return response.data;
     },
 
+    verifyToken: async (): Promise<{ isValid: boolean }> => {
+        try {
+            const response = await axios.post<ApiResponse>(`${BASE_URL}/auth/verify-token`);
+            return { isValid: response.data.success || false };
+        } catch (error) {
+            console.error('Token verification failed:', error);
+            return { isValid: false };
+        }
+    },
+
     resetPassword: async (data: PasswordResetRequest): Promise<MessageResponse> => {
-        const response = await axios.post<MessageResponse>(`${BASE_URL}/auth/password/reset`, data);
+        const response = await axios.post<MessageResponse>(`${BASE_URL}/auth/password/reset`, {
+            email: data.email,
+            token: data.code,
+            newPassword: data.newPassword
+        });
         return response.data;
     },
 
@@ -207,12 +270,25 @@ const authService = {
     },
 
     sendIdFindEmail: async (email: string): Promise<MessageResponse> => {
-        const response = await axios.post<MessageResponse>('/api/auth/find-id/send-code', { email });
+        const response = await axios.post<MessageResponse>(`${BASE_URL}/auth/find-id/send`, { email });
         return response.data;
     },
 
     verifyIdFindCode: async (email: string, code: string): Promise<IdFindResponse> => {
-        const response = await axios.post<IdFindResponse>('/api/auth/find-id/verify-code', { 
+        const response = await axios.post<IdFindResponse>(`${BASE_URL}/auth/find-id/verify`, { 
+            email, 
+            code 
+        });
+        return response.data;
+    },
+
+    sendPasswordResetEmail: async (email: string): Promise<MessageResponse> => {
+        const response = await axios.post<MessageResponse>(`${BASE_URL}/auth/password/send`, { email });
+        return response.data;
+    },
+
+    verifyPasswordResetCode: async (email: string, code: string): Promise<ApiResponse<any>> => {
+        const response = await axios.post<ApiResponse<any>>(`${BASE_URL}/auth/password/verify`, { 
             email, 
             code 
         });

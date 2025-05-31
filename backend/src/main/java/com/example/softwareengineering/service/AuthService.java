@@ -18,12 +18,17 @@ import com.example.softwareengineering.config.JwtUtil;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import com.example.softwareengineering.service.EmailService;
 import lombok.RequiredArgsConstructor;
+import com.example.softwareengineering.entity.SiteMember;
+import com.example.softwareengineering.repository.SiteMemberRepository;
+import com.example.softwareengineering.repository.SiteRepository;
+import com.example.softwareengineering.entity.Site;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 import java.util.Optional;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +39,8 @@ public class AuthService {
     private final MailService mailService;
     private final JwtUtil jwtUtil;
     private final EmailService emailService;
+    private final SiteMemberRepository siteMemberRepository;
+    private final SiteRepository siteRepository;
     private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
 
     @Value("${frontend.url}")
@@ -109,18 +116,31 @@ public String sendVerificationEmail(String email) {
 
     @Transactional
     public Map<String, Object> verifyEmail(String token) {
+        logger.info("이메일 인증 프로세스 시작. 토큰: {}", token);
+        
         // 토큰으로 먼저 검증 데이터를 찾음
         EmailVerification verification = emailVerificationRepository.findByToken(token)
-            .orElseThrow(() -> new RuntimeException("유효하지 않은 인증 토큰입니다"));
+            .orElseThrow(() -> {
+                logger.error("유효하지 않은 인증 토큰: {}", token);
+                return new RuntimeException("유효하지 않은 인증 토큰입니다");
+            });
+
+        logger.info("이메일 검증 데이터 찾음. 이메일: {}, 생성시간: {}", 
+            verification.getEmail(), verification.getCreatedAt());
 
         // 이메일과 토큰을 함께 검증하고 만료 시간도 체크
-        LocalDateTime cutoff = LocalDateTime.now().minusMinutes(30);
+        LocalDateTime cutoff = LocalDateTime.now().minusHours(1);
         if (verification.getCreatedAt().isBefore(cutoff)) {
+            logger.error("토큰 만료됨. 이메일: {}, 생성시간: {}, 만료시간: {}", 
+                verification.getEmail(), verification.getCreatedAt(), cutoff);
             throw new RuntimeException("만료된 인증 링크입니다");
         }
 
+        logger.info("토큰 유효성 확인됨. 이메일: {}", verification.getEmail());
+
         // 이미 인증된 경우
         if (verification.isVerified()) {
+            logger.info("이미 인증된 이메일: {}", verification.getEmail());
             Map<String, Object> response = new HashMap<>();
             response.put("message", "이미 인증이 완료된 이메일입니다");
             response.put("email", verification.getEmail());
@@ -130,51 +150,72 @@ public String sendVerificationEmail(String email) {
         try {
             verification.setVerified(true);
             emailVerificationRepository.save(verification);
-            logger.info("Email verification successful for token: {}", token);
+            logger.info("이메일 인증 완료. 이메일: {}", verification.getEmail());
             
             Map<String, Object> response = new HashMap<>();
             response.put("message", "이메일 인증이 완료되었습니다");
             response.put("email", verification.getEmail());
             return response;
         } catch (Exception e) {
-            logger.error("Error during email verification: {}", e.getMessage());
+            logger.error("이메일 인증 처리 중 오류 발생. 이메일: {}, 에러: {}", 
+                verification.getEmail(), e.getMessage(), e);
             throw new RuntimeException("이메일 인증 처리 중 오류가 발생했습니다");
         }
     }
 
     @Transactional
-    public String signup(SignupRequestDto dto) {
+    public Map<String, Object> signup(SignupRequestDto signupRequestDto) {
+        Map<String, Object> response = new HashMap<>();
+
+        // 이메일 중복 체크
+        if (userRepository.existsByEmail(signupRequestDto.getEmail())) {
+            response.put("success", false);
+            response.put("message", "이미 사용 중인 이메일입니다.");
+            return response;
+        }
+
+        // 사용자 ID 중복 체크
+        if (userRepository.existsByUserId(signupRequestDto.getUserId())) {
+            response.put("success", false);
+            response.put("message", "이미 사용 중인 사용자 ID입니다.");
+            return response;
+        }
+
         // 이메일 인증 확인
-        EmailVerification verification = emailVerificationRepository.findByEmail(dto.getEmail())
-            .orElseThrow(() -> new RuntimeException("이메일 인증이 필요합니다"));
+        EmailVerification verification = emailVerificationRepository.findByEmail(signupRequestDto.getEmail())
+                .orElseThrow(() -> new RuntimeException("이메일 인증이 필요합니다."));
 
         if (!verification.isVerified()) {
-            throw new RuntimeException("이메일 인증이 필요합니다");
-        }
-
-        // 비밀번호 확인
-        if (!dto.getPassword().equals(dto.getPasswordConfirm())) {
-            throw new RuntimeException("비밀번호가 일치하지 않습니다");
-        }
-
-        // 아이디 중복 체크
-        if (userRepository.existsByUserId(dto.getUserId())) {
-            throw new RuntimeException("이미 사용 중인 아이디입니다");
+            response.put("success", false);
+            response.put("message", "이메일 인증이 필요합니다.");
+            return response;
         }
 
         // 사용자 생성
         User user = User.builder()
-                .email(dto.getEmail())
-                .password(passwordEncoder.encode(dto.getPassword()))
-                .userId(dto.getUserId())
-                .role(MemberRole.MEMBER)
-                .emailVerified(true)
+                .email(signupRequestDto.getEmail())
+                .password(passwordEncoder.encode(signupRequestDto.getPassword()))
+                .userId(signupRequestDto.getUserId())
+                .emailVerified(true)  // 이미 인증된 상태로 설정
                 .build();
 
-        userRepository.save(user);
-        emailVerificationRepository.delete(verification);
+        user = userRepository.save(user);
 
-        return "회원가입이 완료되었습니다";
+        // 기본 사이트에 MEMBER로 추가
+        Site defaultSite = siteRepository.findById(1L)
+                .orElseThrow(() -> new RuntimeException("기본 사이트를 찾을 수 없습니다."));
+
+        SiteMember siteMember = SiteMember.builder()
+                .user(user)
+                .site(defaultSite)
+                .role(MemberRole.MEMBER)
+                .build();
+
+        siteMemberRepository.save(siteMember);
+
+        response.put("success", true);
+        response.put("message", "회원가입이 완료되었습니다.");
+        return response;
     }
 
     @Transactional(readOnly = true)
@@ -194,81 +235,196 @@ public String sendVerificationEmail(String email) {
             throw new RuntimeException("비밀번호를 입력해주세요");
         }
 
-        // 이메일 또는 아이디로 사용자 찾기
-        User user = userRepository.findByEmailOrUserId(dto.getIdentifier(), dto.getIdentifier())
-                .orElseThrow(() -> new RuntimeException("등록되지 않은 아이디이거나, 아이디 또는 비밀번호를 잘못 입력했습니다"));
-
-        // 비밀번호 확인
-        if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
-            logger.warn("Failed login attempt for user: {}", dto.getIdentifier());
-            throw new RuntimeException("아이디 또는 비밀번호를 잘못 입력했습니다");
-        }
-
-        // 이메일 인증 확인
-        if (!user.isEmailVerified()) {
-            throw new RuntimeException("이메일 인증이 필요합니다. 회원가입 시 받은 인증 메일을 확인해주세요");
-        }
+        logger.info("로그인 시도: {}", dto.getIdentifier());
 
         try {
+            // 이메일 또는 아이디로 사용자 찾기
+            User user = userRepository.findByEmailOrUserId(dto.getIdentifier(), dto.getIdentifier())
+                    .orElseThrow(() -> new RuntimeException("등록되지 않은 아이디이거나, 아이디 또는 비밀번호를 잘못 입력했습니다"));
+
+            // 비밀번호 확인
+            if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
+                logger.warn("Failed login attempt for user: {}", dto.getIdentifier());
+                throw new RuntimeException("아이디 또는 비밀번호를 잘못 입력했습니다");
+            }
+
+            // 이메일 인증 확인
+            if (!user.isEmailVerified()) {
+                throw new RuntimeException("이메일 인증이 필요합니다. 회원가입 시 받은 인증 메일을 확인해주세요");
+            }
+
             // JWT 토큰 생성
             String token = jwtUtil.generateToken(user.getEmail(), user.getId());
+            logger.info("Generated token for user: {}", dto.getIdentifier());
+
+            if (token == null || token.trim().isEmpty()) {
+                throw new RuntimeException("토큰 생성에 실패했습니다");
+            }
+
+            // 사용자의 사이트별 권한 정보 조회
+            List<SiteMember> siteMembers = siteMemberRepository.findByUser(user);
+            Map<Long, MemberRole> siteRoles = new HashMap<>();
+            for (SiteMember siteMember : siteMembers) {
+                siteRoles.put(siteMember.getSite().getId(), siteMember.getRole());
+            }
 
             logger.info("Successful login for user: {}", dto.getIdentifier());
 
             // 응답 생성
-            return LoginResponseDto.builder()
+            LoginResponseDto response = LoginResponseDto.builder()
                     .token(token)
                     .user(LoginResponseDto.UserDto.builder()
                             .id(user.getId())
                             .email(user.getEmail())
                             .userId(user.getUserId())
+                            .siteRoles(siteRoles)
                             .build())
                     .message("로그인이 완료되었습니다")
                     .build();
+
+            logger.info("Login response created for user: {}, hasToken: {}", 
+                dto.getIdentifier(), response.getToken() != null);
+
+            return response;
         } catch (Exception e) {
-            logger.error("Token generation failed for user: {}", dto.getIdentifier(), e);
-            throw new RuntimeException("로그인 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요");
+            logger.error("Login failed for user: {}, error: {}", dto.getIdentifier(), e.getMessage(), e);
+            throw e;
         }
     }
 
     public String findUserIdByEmailAndCode(String email, String code) {
+        // 인증번호 확인
         String storedCode = emailService.getVerificationCode(email);
         if (storedCode == null || !storedCode.equals(code)) {
-            throw new IllegalArgumentException("유효하지 않은 인증 코드입니다.");
+            throw new IllegalArgumentException("유효하지 않은 인증번호입니다.");
+        }
+
+        // 유효시간 체크 (1시간)
+        LocalDateTime cutoff = LocalDateTime.now().minusHours(1);
+        if (emailService.getVerificationCodeCreationTime(email).isBefore(cutoff)) {
+            throw new IllegalArgumentException("만료된 인증번호입니다. 다시 시도해주세요.");
         }
 
         User user = userRepository.findByEmail(email)
             .orElseThrow(() -> new UsernameNotFoundException("해당 이메일로 등록된 사용자를 찾을 수 없습니다."));
 
+        // 인증번호 삭제
+        emailService.removeVerificationCode(email);
+
         return user.getUserId();
     }
 
-    public void verifyPasswordResetCode(String email, String code) {
-        String storedCode = emailService.getVerificationCode(email);
-        if (storedCode == null || !storedCode.equals(code)) {
-            throw new IllegalArgumentException("유효하지 않은 인증 코드입니다.");
-        }
+    public boolean verifyPasswordResetCode(String email, String code) {
+        logger.info("비밀번호 재설정 인증번호 검증 시작. 이메일: {}", email);
+        
+        try {
+            // 인증번호 확인
+            String storedCode = emailService.getVerificationCode(email);
+            if (storedCode == null) {
+                logger.error("저장된 인증번호가 없음. 이메일: {}", email);
+                return false;
+            }
+            
+            if (!storedCode.equals(code)) {
+                logger.error("인증번호 불일치. 이메일: {}", email);
+                return false;
+            }
 
-        // 이메일로 사용자 찾기
-        userRepository.findByEmail(email)
-            .orElseThrow(() -> new UsernameNotFoundException("해당 이메일로 등록된 사용자를 찾을 수 없습니다."));
+            logger.info("인증번호 일치 확인됨. 이메일: {}", email);
+
+            // 유효시간 체크 (1시간)
+            LocalDateTime cutoff = LocalDateTime.now().minusHours(1);
+            LocalDateTime codeCreationTime = emailService.getVerificationCodeCreationTime(email);
+            
+            if (codeCreationTime == null) {
+                logger.error("인증번호 생성 시간 정보 없음. 이메일: {}", email);
+                return false;
+            }
+
+            if (codeCreationTime.isBefore(cutoff)) {
+                logger.error("인증번호 만료됨. 이메일: {}, 생성시간: {}, 만료시간: {}", 
+                    email, codeCreationTime, cutoff);
+                return false;
+            }
+
+            logger.info("인증번호 유효시간 확인됨. 이메일: {}", email);
+
+            // 이메일로 사용자 찾기
+            userRepository.findByEmail(email)
+                .orElseThrow(() -> {
+                    logger.error("사용자를 찾을 수 없음. 이메일: {}", email);
+                    return new UsernameNotFoundException("해당 이메일로 등록된 사용자를 찾을 수 없습니다.");
+                });
+                
+            logger.info("비밀번호 재설정 인증번호 검증 완료. 이메일: {}", email);
+            return true;
+            
+        } catch (Exception e) {
+            logger.error("사용자 조회 중 오류 발생. 이메일: {}, 에러: {}", email, e.getMessage(), e);
+            return false;
+        }
     }
 
     @Transactional
-    public void resetPassword(String email, String code, String newPassword) {
-        // 인증 코드 확인
+    public void resetPasswordWithCode(String email, String code, String newPassword) {
+        // 인증번호 확인
         String storedCode = emailService.getVerificationCode(email);
         if (storedCode == null || !storedCode.equals(code)) {
-            throw new IllegalArgumentException("유효하지 않은 인증 코드입니다.");
+            throw new IllegalArgumentException("유효하지 않은 인증번호입니다.");
+        }
+
+        // 유효시간 체크 (1시간)
+        LocalDateTime cutoff = LocalDateTime.now().minusHours(1);
+        if (emailService.getVerificationCodeCreationTime(email).isBefore(cutoff)) {
+            throw new IllegalArgumentException("만료된 인증번호입니다. 다시 시도해주세요.");
         }
 
         // 사용자 찾기
         User user = userRepository.findByEmail(email)
             .orElseThrow(() -> new UsernameNotFoundException("해당 이메일로 등록된 사용자를 찾을 수 없습니다."));
 
+        // 새 비밀번호가 기존 비밀번호와 같은지 확인
+        if (passwordEncoder.matches(newPassword, user.getPassword())) {
+            throw new IllegalArgumentException("새 비밀번호가 기존 비밀번호와 동일합니다. 다른 비밀번호를 선택해주세요.");
+        }
+
         // 비밀번호 변경
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
+
+        // 인증번호 삭제
+        emailService.removeVerificationCode(email);
+    }
+
+    @Transactional
+    public void changePassword(String email, String currentPassword, String newPassword) {
+        // 사용자 찾기
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new UsernameNotFoundException("해당 이메일로 등록된 사용자를 찾을 수 없습니다."));
+
+        // 현재 비밀번호 확인
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
+        }
+
+        // 새 비밀번호가 현재 비밀번호와 같은지 확인
+        if (passwordEncoder.matches(newPassword, user.getPassword())) {
+            throw new IllegalArgumentException("새 비밀번호는 현재 비밀번호와 달라야 합니다.");
+        }
+
+        // 비밀번호 변경
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
+    public boolean verifyToken(String token) {
+        try {
+            jwtUtil.validateToken(token);
+            return true;
+        } catch (Exception e) {
+            logger.error("토큰 검증 실패: {}", e.getMessage());
+            return false;
+        }
     }
 }
 

@@ -15,6 +15,11 @@ import com.example.softwareengineering.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Service
 public class ProjectMemberService {
     @Autowired
@@ -125,5 +130,22 @@ public class ProjectMemberService {
         }
         projectMemberRepository.delete(member);
         return "멤버가 삭제되었습니다.";
+    }
+
+    // 프로젝트 멤버 목록 조회
+    public List<Map<String, String>> getProjectMembers(Long projectId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new CustomException("프로젝트 없음"));
+        
+        List<ProjectMember> members = projectMemberRepository.findByProject(project);
+        return members.stream()
+                .map(member -> {
+                    Map<String, String> memberInfo = new HashMap<>();
+                    memberInfo.put("userId", member.getUser().getUserId());
+                    memberInfo.put("name", member.getUser().getUserId());
+                    memberInfo.put("role", member.getRole().toString());
+                    return memberInfo;
+                })
+                .collect(Collectors.toList());
     }
 } 

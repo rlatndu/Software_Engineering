@@ -1,22 +1,24 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import authService from "../../api/authService";
 import './IdFind.css';
 
 const PasswordFind = () => {
-    const navigate = useNavigate();
     const [email, setEmail] = useState("");
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [error, setError] = useState("");
+    const [isEmailSent, setIsEmailSent] = useState(false);
+    const [isVerified, setIsVerified] = useState(false);
     const [verificationCode, setVerificationCode] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
-    const [step, setStep] = useState(1); // 1: 이메일 입력, 2: 인증코드 입력, 3: 새 비밀번호 설정
-    const [isProcessing, setIsProcessing] = useState(false);
-    const [error, setError] = useState("");
+    const [successMessage, setSuccessMessage] = useState("");
 
     const handleSendCode = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsProcessing(true);
         setError("");
+        setSuccessMessage("");
 
         try {
             if (!email.trim()) {
@@ -31,11 +33,12 @@ const PasswordFind = () => {
                 return;
             }
 
-            // 비밀번호 재설정 코드 요청
-            await authService.requestPasswordReset(email);
-            setStep(2);
+            // 인증번호 요청
+            await authService.sendPasswordResetEmail(email);
+            setIsEmailSent(true);
+            setSuccessMessage("인증번호가 이메일로 발송되었습니다.");
         } catch (error: any) {
-            const errorMessage = error.response?.data?.message || "인증 코드 발송 중 오류가 발생했습니다.";
+            const errorMessage = error.response?.data?.message || "인증번호 발송 중 오류가 발생했습니다.";
             setError(errorMessage);
         } finally {
             setIsProcessing(false);
@@ -46,17 +49,23 @@ const PasswordFind = () => {
         e.preventDefault();
         setIsProcessing(true);
         setError("");
+        setSuccessMessage("");
 
         try {
             if (!verificationCode.trim()) {
-                setError("인증 코드를 입력해주세요.");
+                setError("인증번호를 입력해주세요.");
                 return;
             }
 
-            // 인증 코드 확인 - 임시로 바로 다음 단계로 진행
-            setStep(3);
+            const response = await authService.verifyPasswordResetCode(email, verificationCode);
+            if (response.verified) {
+                setIsVerified(true);
+                setSuccessMessage("인증이 완료되었습니다. 새 비밀번호를 설정해주세요.");
+            } else {
+                setError("인증번호가 일치하지 않습니다.");
+            }
         } catch (error: any) {
-            const errorMessage = error.response?.data?.message || "인증 코드 확인 중 오류가 발생했습니다.";
+            const errorMessage = error.response?.data?.message || "인증번호 확인 중 오류가 발생했습니다.";
             setError(errorMessage);
         } finally {
             setIsProcessing(false);
@@ -67,6 +76,7 @@ const PasswordFind = () => {
         e.preventDefault();
         setIsProcessing(true);
         setError("");
+        setSuccessMessage("");
 
         try {
             // 비밀번호 유효성 검사
@@ -89,101 +99,27 @@ const PasswordFind = () => {
 
             // 비밀번호 재설정
             await authService.resetPasswordWithCode({
-                identifier: email,
+                email: email,
                 code: verificationCode,
                 newPassword: newPassword
             });
             
-            alert("비밀번호가 성공적으로 변경되었습니다.");
-            navigate('/login');
+            setSuccessMessage("비밀번호가 성공적으로 변경되었습니다.");
+            // 3초 후 입력 필드 초기화
+            setTimeout(() => {
+                setIsEmailSent(false);
+                setIsVerified(false);
+                setVerificationCode("");
+                setEmail("");
+                setNewPassword("");
+                setNewPasswordConfirm("");
+                setSuccessMessage("");
+            }, 3000);
         } catch (error: any) {
             const errorMessage = error.response?.data?.message || "비밀번호 변경 중 오류가 발생했습니다.";
             setError(errorMessage);
         } finally {
             setIsProcessing(false);
-        }
-    };
-
-    const renderStep = () => {
-        switch (step) {
-            case 1:
-                return (
-                    <form onSubmit={handleSendCode}>
-                        <label htmlFor="email">이메일</label>
-                        <input
-                            id="email"
-                            type="email"
-                            placeholder="가입 시 등록한 이메일을 입력해주세요"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            disabled={isProcessing}
-                        />
-                        <button 
-                            type="submit" 
-                            className="find_page_button"
-                            disabled={isProcessing}
-                        >
-                            {isProcessing ? "처리 중..." : "인증 코드 받기"}
-                        </button>
-                    </form>
-                );
-            case 2:
-                return (
-                    <form onSubmit={handleVerifyCode}>
-                        <p className="email_sent_info">
-                            입력하신 이메일로 인증 코드를 발송했습니다.<br />
-                            이메일을 확인해주세요.
-                        </p>
-                        <label htmlFor="verificationCode">인증 코드</label>
-                        <input
-                            id="verificationCode"
-                            type="text"
-                            placeholder="인증 코드 6자리를 입력해주세요"
-                            value={verificationCode}
-                            onChange={(e) => setVerificationCode(e.target.value)}
-                            disabled={isProcessing}
-                        />
-                        <button 
-                            type="submit" 
-                            className="find_page_button"
-                            disabled={isProcessing}
-                        >
-                            {isProcessing ? "처리 중..." : "확인"}
-                        </button>
-                    </form>
-                );
-            case 3:
-                return (
-                    <form onSubmit={handlePasswordReset}>
-                        <label htmlFor="newPassword">새 비밀번호</label>
-                        <input
-                            id="newPassword"
-                            type="password"
-                            placeholder="새 비밀번호를 입력해주세요"
-                            value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
-                            disabled={isProcessing}
-                        />
-                        <label htmlFor="newPasswordConfirm">새 비밀번호 확인</label>
-                        <input
-                            id="newPasswordConfirm"
-                            type="password"
-                            placeholder="새 비밀번호를 다시 입력해주세요"
-                            value={newPasswordConfirm}
-                            onChange={(e) => setNewPasswordConfirm(e.target.value)}
-                            disabled={isProcessing}
-                        />
-                        <button 
-                            type="submit" 
-                            className="find_page_button"
-                            disabled={isProcessing}
-                        >
-                            {isProcessing ? "처리 중..." : "비밀번호 변경"}
-                        </button>
-                    </form>
-                );
-            default:
-                return null;
         }
     };
 
@@ -210,7 +146,81 @@ const PasswordFind = () => {
                 </div>
 
                 {error && <p className="error_text">{error}</p>}
-                {renderStep()}
+                {successMessage && <p className="success_text">{successMessage}</p>}
+
+                {!isEmailSent && (
+                    <form onSubmit={handleSendCode}>
+                        <input
+                            type="email"
+                            placeholder="이메일을 입력해주세요"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            disabled={isProcessing}
+                        />
+                        <button 
+                            type="submit" 
+                            className="find_page_button"
+                            disabled={isProcessing}
+                        >
+                            {isProcessing ? "처리 중..." : "인증번호 받기"}
+                        </button>
+                    </form>
+                )}
+
+                {isEmailSent && !isVerified && (
+                    <form onSubmit={handleVerifyCode}>
+                        <input
+                            type="text"
+                            placeholder="인증번호를 입력해주세요"
+                            value={verificationCode}
+                            onChange={(e) => setVerificationCode(e.target.value)}
+                            disabled={isProcessing}
+                        />
+                        <button 
+                            type="submit" 
+                            className="find_page_button"
+                            disabled={isProcessing}
+                        >
+                            {isProcessing ? "확인 중..." : "인증번호 확인"}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleSendCode}
+                            disabled={isProcessing}
+                            className="find_page_button resend-button"
+                        >
+                            인증번호 재발송
+                        </button>
+                    </form>
+                )}
+
+                {isVerified && (
+                    <form onSubmit={handlePasswordReset}>
+                        <div className="password-reset-form">
+                            <input
+                                type="password"
+                                placeholder="새 비밀번호를 입력해주세요"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                disabled={isProcessing}
+                            />
+                            <input
+                                type="password"
+                                placeholder="새 비밀번호를 다시 입력해주세요"
+                                value={newPasswordConfirm}
+                                onChange={(e) => setNewPasswordConfirm(e.target.value)}
+                                disabled={isProcessing}
+                            />
+                            <button 
+                                type="submit" 
+                                className="find_page_button"
+                                disabled={isProcessing}
+                            >
+                                {isProcessing ? "변경 중..." : "비밀번호 변경"}
+                            </button>
+                        </div>
+                    </form>
+                )}
 
                 <div className="login_links">
                     <Link to="/login">로그인</Link> | 
@@ -222,4 +232,4 @@ const PasswordFind = () => {
     );
 };
 
-export default PasswordFind; 
+export default PasswordFind;

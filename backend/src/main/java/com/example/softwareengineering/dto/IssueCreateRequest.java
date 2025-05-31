@@ -1,7 +1,11 @@
 package com.example.softwareengineering.dto;
 
 import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.Setter;
 
+@Getter
+@Setter
 public class IssueCreateRequest {
     private Long projectId;
     private String title;
@@ -9,9 +13,10 @@ public class IssueCreateRequest {
     private String description;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
-    private Long assigneeId;
-    private Long reporterId;
+    private String assigneeId;
+    private String reporterId;
     private Integer order; // 우선순위(드래그 순서)
+    private Long columnId;  // 이슈가 속할 컬럼 ID
     // 첨부파일, 하위이슈 등은 별도 처리
 
     public Long getProjectId() { return projectId; }
@@ -26,10 +31,12 @@ public class IssueCreateRequest {
     public void setStartDate(LocalDateTime startDate) { this.startDate = startDate; }
     public LocalDateTime getEndDate() { return endDate; }
     public void setEndDate(LocalDateTime endDate) { this.endDate = endDate; }
-    public Long getAssigneeId() { return assigneeId; }
-    public void setAssigneeId(Long assigneeId) { this.assigneeId = assigneeId; }
-    public Long getReporterId() { return reporterId; }
-    public void setReporterId(Long reporterId) { this.reporterId = reporterId; }
+    public String getAssigneeId() { return assigneeId; }
+    public void setAssigneeId(String assigneeId) { this.assigneeId = assigneeId; }
+    public String getReporterId() { return reporterId; }
+    public void setReporterId(String reporterId) { this.reporterId = reporterId; }
     public Integer getOrder() { return order; }
     public void setOrder(Integer order) { this.order = order; }
+    public Long getColumnId() { return columnId; }
+    public void setColumnId(Long columnId) { this.columnId = columnId; }
 } 

@@ -47,7 +47,6 @@ html, body {
 /* 폼 그룹 */
 .project-form {
   display: flex;
-  flex-direction: column;
   gap: 1.5rem;
   max-width: 50rem;
 }

@@ -19,9 +19,9 @@ const AppRouter = () => {
                 <Route path="/about" element={<About />}/>
                 <Route path="/join" element={<Join />}/>
                 <Route path='/site' element={<Site />}/>
-                <Route path="/Main" element={<Main />}/>
-                <Route path="/Create/Project" element={<ProjectCreatePage />}></Route>
-                 <Route path="/Create/Site" element={<SiteCreatePage />}></Route>
+                <Route path="/main/:siteId" element={<Main />}/>
+                <Route path="/create/project/:siteId" element={<ProjectCreatePage />}/>
+                <Route path="/create/site" element={<SiteCreatePage />}/>
             </Routes>
         </BrowserRouter>
     );

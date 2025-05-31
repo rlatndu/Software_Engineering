@@ -1,10 +1,24 @@
 package com.example.softwareengineering.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import lombok.*;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 
 @Entity
 @Table(name = "issues")
@@ -36,33 +50,54 @@ public class Issue {
     @JoinColumn(name = "assignee_id")
     private User assignee;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private IssueStatus status;
 
-    @Column(nullable = false)
+    @Column(name = "start_date")
     private LocalDateTime startDate;
 
-    @Column(nullable = false)
+    @Column(name = "end_date")
     private LocalDateTime endDate;
 
-    @Column(name = "issue_order")
-    private Integer order;
+    @Column(name = "due_date")
+    private LocalDateTime dueDate;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "column_id", nullable = false)
+    private BoardColumn column;
+
+    @Column(nullable = false)
+    private Integer orderIndex;
+
+    @Column(nullable = false)
     @Builder.Default
+    private Boolean isActive = true;
+
+    @Column(nullable = false)
+    private LocalDateTime createdAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by", nullable = false)
+    private User createdBy;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "updated_by")
+    private User updatedBy;
+
     @OneToMany(mappedBy = "issue", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Attachment> attachments = new HashSet<>();
-
     @Builder.Default
-    @OneToMany(mappedBy = "parentIssue", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<SubIssue> subIssues = new HashSet<>();
+    private List<IssueComment> comments = new ArrayList<>();
+
+    @OneToMany(mappedBy = "issue", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<IssueAttachment> attachments = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "custom_status_id")
     private CustomIssueStatus customStatus;
-
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 
     @PrePersist
     protected void onCreate() {
@@ -77,10 +112,10 @@ public class Issue {
     }
 
     public Integer getOrder() {
-        return order;
+        return orderIndex;
     }
 
     public void setOrder(Integer order) {
-        this.order = order;
+        this.orderIndex = order;
     }
 } 

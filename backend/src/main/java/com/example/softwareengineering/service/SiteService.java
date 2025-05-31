@@ -4,15 +4,24 @@ import com.example.softwareengineering.entity.Site;
 import com.example.softwareengineering.entity.User;
 import com.example.softwareengineering.entity.SiteMember;
 import com.example.softwareengineering.entity.MemberRole;
+import com.example.softwareengineering.entity.Project;
+import com.example.softwareengineering.entity.RecentSiteVisit;
 import com.example.softwareengineering.repository.SiteRepository;
 import com.example.softwareengineering.repository.SiteMemberRepository;
 import com.example.softwareengineering.repository.ProjectRepository;
+import com.example.softwareengineering.repository.IssueRepository;
+import com.example.softwareengineering.repository.BoardColumnRepository;
+import com.example.softwareengineering.repository.ProjectMemberRepository;
+import com.example.softwareengineering.repository.UserRepository;
+import com.example.softwareengineering.repository.RecentSiteVisitRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +29,12 @@ public class SiteService {
     private final SiteRepository siteRepository;
     private final SiteMemberRepository siteMemberRepository;
     private final ProjectRepository projectRepository;
+    private final IssueRepository issueRepository;
+    private final BoardColumnRepository boardColumnRepository;
+    private final ProjectMemberRepository projectMemberRepository;
+    private final UserRepository userRepository;
+    private final RecentSiteVisitRepository recentSiteVisitRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public Site createSite(String name, User owner) {
@@ -100,13 +115,50 @@ public class SiteService {
             throw new IllegalArgumentException("삭제 권한이 없습니다.");
         }
 
-        // 관련된 모든 프로젝트 삭제
-        projectRepository.deleteBySite(site);
+        try {
+            // 1. 프로젝트 관련 데이터 삭제
+            List<Project> projects = projectRepository.findBySite(site);
+            for (Project project : projects) {
+                // 1-1. 이슈 삭제
+                issueRepository.deleteByProject(project);
+                
+                // 1-2. 보드 컬럼 삭제
+                boardColumnRepository.deleteByProject(project);
+                
+                // 1-3. 프로젝트 멤버 삭제
+                projectMemberRepository.deleteByProject(project);
+            }
+
+            // 2. 프로젝트 삭제
+            projectRepository.deleteBySite(site);
+            
+            // 3. 사이트 멤버 삭제
+            siteMemberRepository.deleteBySite(site);
+            
+            // 4. 사이트 삭제
+            siteRepository.delete(site);
+        } catch (Exception e) {
+            throw new RuntimeException("사이트 삭제에 실패했습니다: " + e.getMessage(), e);
+        }
+    }
+
+    @Transactional
+    public void recordSiteVisit(Long siteId, Long userId) {
+        Site site = siteRepository.findById(siteId)
+                .orElseThrow(() -> new IllegalArgumentException("사이트를 찾을 수 없습니다."));
         
-        // 사이트 멤버 삭제
-        siteMemberRepository.deleteBySite(site);
-        
-        // 사이트 삭제
-        siteRepository.delete(site);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        RecentSiteVisit visit = RecentSiteVisit.builder()
+                .site(site)
+                .user(user)
+                .build();
+
+        recentSiteVisitRepository.save(visit);
+    }
+
+    public List<Site> getRecentSites(Long userId) {
+        return recentSiteVisitRepository.findRecentSitesByUserId(userId);
     }
 } 

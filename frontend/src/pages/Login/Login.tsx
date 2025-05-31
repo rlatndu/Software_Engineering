@@ -1,10 +1,14 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import authService from "../../api/authService";
+import { useAuth } from "../../contexts/AuthContext";
+import { UserRole } from "../../types/role";
 import './Login.css';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -37,33 +41,33 @@ const Login = () => {
       });
 
       // 로그인 성공 여부 확인
-      if (response && response.token) {
-        // 로그인 성공 시 사이트 목록 페이지로 이동
-        navigate('/site');
+      if (response.success && response.token && response.user) {
+        console.log('로그인 성공, 사이트 목록 페이지로 이동');
+        
+        // AuthContext 업데이트
+        const userWithRoles = {
+          ...response.user,
+          name: response.user.userId,
+          roles: {
+            siteRole: response.user.siteRoles ? 
+              (Object.values(response.user.siteRoles)[0] === 'ADMIN' ? UserRole.ADMIN :
+               Object.values(response.user.siteRoles)[0] === 'PM' ? UserRole.PM :
+               UserRole.MEMBER) : undefined,
+            projectRoles: {}
+          }
+        };
+        login(userWithRoles);
+
+        // 이전 페이지가 있으면 해당 페이지로, 없으면 사이트 목록 페이지로 이동
+        const from = location.state?.from || '/site';
+        navigate(from, { replace: true });
       } else {
-        // 토큰이 없는 경우
-        throw new Error("로그인 응답이 올바르지 않습니다.");
+        // 토큰이나 사용자 정보가 없는 경우
+        throw new Error(response.message || "로그인 응답이 올바르지 않습니다.");
       }
-      
     } catch (error: any) {
-      console.error('Login component error:', error);
-      
-      // 서버로부터 받은 에러 메시지 처리
-      const errorMessage = error.response?.data || error.message;
-      
-      // 특정 에러 메시지에 따른 사용자 친화적인 메시지 설정
-      if (errorMessage.includes("이메일 인증이 필요합니다")) {
-        setError("이메일 인증이 필요합니다. 회원가입 시 받은 인증 메일을 확인해주세요.");
-      } 
-      else if (errorMessage.includes("비밀번호를 잘못 입력했습니다") || errorMessage.includes("올바르지 않습니다")) {
-        setError("아이디 또는 비밀번호가 올바르지 않습니다.");
-      }
-      else if (errorMessage.includes("등록되지 않은 아이디")) {
-        setError("등록되지 않은 아이디입니다. 회원가입 후 이용해주세요.");
-      }
-      else {
-        setError("로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
-      }
+      console.error('로그인 에러:', error);
+      setError(error.message || "로그인에 실패했습니다.");
     } finally {
       setIsProcessing(false);
     }
