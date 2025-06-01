@@ -82,6 +82,15 @@ public class CommentService {
         commentRepository.delete(comment);
     }
 
+    @Transactional
+    public void deleteAllCommentsByIssue(Long issueId) {
+        Issue issue = issueRepository.findById(issueId)
+            .orElseThrow(() -> new CustomException("이슈를 찾을 수 없습니다."));
+        
+        // 이슈에 연결된 모든 댓글 삭제
+        commentRepository.deleteByIssue(issue);
+    }
+
     private CommentResponse toResponse(Comment comment) {
         CommentResponse response = new CommentResponse();
         response.setId(comment.getId());

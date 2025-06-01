@@ -15,6 +15,7 @@ import com.example.softwareengineering.repository.ProjectMemberRepository;
 import com.example.softwareengineering.repository.SiteMemberRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -196,6 +197,7 @@ public class IssueService {
     }
 
     // 이슈 삭제 (담당자, ADMIN, PM 가능)
+    @Transactional
     public void deleteIssue(Long issueId, Long userId) {
         Issue issue = issueRepository.findById(issueId)
             .orElseThrow(() -> new CustomException("이슈를 찾을 수 없습니다."));
@@ -231,6 +233,10 @@ public class IssueService {
         if (!hasPermission) {
             throw new CustomException("이슈를 삭제할 권한이 없습니다.");
         }
+
+        // 연관된 댓글과 첨부파일 삭제
+        issue.getComments().clear();
+        issue.getAttachments().clear();
 
         issueRepository.delete(issue);
     }
