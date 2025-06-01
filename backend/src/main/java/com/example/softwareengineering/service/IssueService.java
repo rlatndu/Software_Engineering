@@ -139,35 +139,99 @@ public class IssueService {
         return issues.stream().map(this::toResponse).collect(Collectors.toList());
     }
 
-    // 이슈 수정 (담당자만)
+    // 이슈 수정 (담당자, ADMIN, PM 가능)
     public IssueResponse updateIssue(Long issueId, IssueUpdateRequest request, Long userId) {
         Issue issue = issueRepository.findById(issueId)
             .orElseThrow(() -> new CustomException("이슈를 찾을 수 없습니다."));
-        if (issue.getAssignee() == null || !issue.getAssignee().getUserId().equals(userId)) {
+        
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new CustomException("사용자를 찾을 수 없습니다."));
+            
+        // 권한 체크
+        boolean hasPermission = false;
+        
+        // 1. 사이트 ADMIN 권한 체크 (최우선)
+        SiteMember siteMember = siteMemberRepository.findBySiteAndUser(issue.getProject().getSite(), user)
+            .orElse(null);
+        if (siteMember != null && siteMember.getRole() == MemberRole.ADMIN) {
+            hasPermission = true;
+        }
+        
+        // 2. 프로젝트 ADMIN/PM 권한 체크
+        if (!hasPermission) {
+            ProjectMember projectMember = projectMemberRepository.findByProjectAndUser(issue.getProject(), user)
+                .orElse(null);
+            if (projectMember != null && 
+                (projectMember.getRole() == MemberRole.ADMIN || projectMember.getRole() == MemberRole.PM)) {
+                hasPermission = true;
+            }
+        }
+        
+        // 3. 담당자 체크
+        if (!hasPermission && issue.getAssignee() != null && issue.getAssignee().getId().equals(userId)) {
+            hasPermission = true;
+        }
+        
+        if (!hasPermission) {
             throw new CustomException("이슈를 수정할 권한이 없습니다.");
         }
+
         if (request.getTitle() != null) issue.setTitle(request.getTitle());
         if (request.getDescription() != null) issue.setDescription(request.getDescription());
         if (request.getStatus() != null) issue.setStatus(IssueStatus.valueOf(request.getStatus()));
         if (request.getStartDate() != null) issue.setStartDate(request.getStartDate());
         if (request.getEndDate() != null) issue.setEndDate(request.getEndDate());
         if (request.getOrder() != null) issue.setOrderIndex(request.getOrder());
-        // 담당자 변경 시 권한도 이전
+        
+        // 담당자 변경
         if (request.getAssigneeId() != null && !request.getAssigneeId().equals(issue.getAssignee() != null ? issue.getAssignee().getUserId() : null)) {
-            User newAssignee = userRepository.findByUserId(request.getAssigneeId()).orElseThrow(() -> new CustomException("새 담당자 없음"));
+            User newAssignee = userRepository.findByUserId(request.getAssigneeId())
+                .orElseThrow(() -> new CustomException("새 담당자를 찾을 수 없습니다."));
             issue.setAssignee(newAssignee);
         }
+        
+        issue.setUpdatedBy(user);
         Issue saved = issueRepository.save(issue);
         return toResponse(saved);
     }
 
-    // 이슈 삭제 (담당자만)
+    // 이슈 삭제 (담당자, ADMIN, PM 가능)
     public void deleteIssue(Long issueId, Long userId) {
         Issue issue = issueRepository.findById(issueId)
             .orElseThrow(() -> new CustomException("이슈를 찾을 수 없습니다."));
-        if (issue.getAssignee() == null || !issue.getAssignee().getId().equals(userId)) {
+            
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new CustomException("사용자를 찾을 수 없습니다."));
+            
+        // 권한 체크
+        boolean hasPermission = false;
+        
+        // 1. 사이트 ADMIN 권한 체크 (최우선)
+        SiteMember siteMember = siteMemberRepository.findBySiteAndUser(issue.getProject().getSite(), user)
+            .orElse(null);
+        if (siteMember != null && siteMember.getRole() == MemberRole.ADMIN) {
+            hasPermission = true;
+        }
+        
+        // 2. 프로젝트 ADMIN/PM 권한 체크
+        if (!hasPermission) {
+            ProjectMember projectMember = projectMemberRepository.findByProjectAndUser(issue.getProject(), user)
+                .orElse(null);
+            if (projectMember != null && 
+                (projectMember.getRole() == MemberRole.ADMIN || projectMember.getRole() == MemberRole.PM)) {
+                hasPermission = true;
+            }
+        }
+        
+        // 3. 담당자 체크
+        if (!hasPermission && issue.getAssignee() != null && issue.getAssignee().getId().equals(userId)) {
+            hasPermission = true;
+        }
+        
+        if (!hasPermission) {
             throw new CustomException("이슈를 삭제할 권한이 없습니다.");
         }
+
         issueRepository.delete(issue);
     }
 

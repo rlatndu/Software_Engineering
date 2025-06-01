@@ -114,13 +114,6 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
   };
 
   const handleDelete = (issue: BoardIssue) => {
-    if (!canManageIssues(user, project)) {
-      setPopup({
-        type: 'accessDenied',
-        payload: { message: '이슈를 삭제할 권한이 없습니다.' }
-      });
-      return;
-    }
     setMenuOpenIssue(null);
     setPopup({ type: 'confirmDelete', payload: issue });
   };
@@ -132,7 +125,7 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
     setPopup({ type: null });
 
     try {
-      await boardService.deleteIssue(issue.id);
+      await boardService.deleteIssue(issue.id, project.id);
       setIssuesByColumn(prev => {
           const updated = { ...prev };
           for (const colId in updated) {
@@ -141,11 +134,11 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
           return updated;
         });
         setPopup({ type: 'result', payload: { message: '삭제되었습니다.' } });
-    } catch (err) {
+    } catch (err: any) {
         setPopup({
           type: 'accessDenied',
           payload: {
-            message: `[ ${issue.title} ] 삭제 권한이 없습니다. 프로젝트 관리자만 삭제하실 수 있습니다.`,
+            message: err.response?.data?.message || `이슈 삭제에 실패했습니다.`,
           },
         });
       }
@@ -803,9 +796,10 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
             try {
               const result = await boardService.updateIssue(updatedIssue.id, {
                 ...editingIssue,
-                ...updatedIssue
+                ...updatedIssue,
+                projectId: project.id
               });
-            setIssuesByColumn(prev => {
+              setIssuesByColumn(prev => {
                 const updated = { ...prev };
                 for (const colId in updated) {
                   updated[colId] = updated[colId].map(issue =>

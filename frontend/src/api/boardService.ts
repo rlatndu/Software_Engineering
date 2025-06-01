@@ -14,12 +14,13 @@ export interface Issue {
   title: string;
   description?: string;
   status: string;
-  startDate?: string;
-  endDate?: string;
+  startDate: string;
+  endDate: string;
   assigneeId?: string;
   reporterId?: string;
-  columnId: number;
-  order: number;
+  projectId: number;
+  columnId?: number;
+  order?: number;
 }
 
 // 기본 칼럼 타입 정의
@@ -290,24 +291,26 @@ const boardService = {
     }
   },
 
-  updateIssue: async (issueId: number, updates: Partial<Issue>): Promise<Issue> => {
-    const user = getCurrentUser();
-    if (!user) {
-      throw new Error('로그인이 필요합니다.');
+  updateIssue: async (issueId: number, data: Partial<Issue>): Promise<Issue> => {
+    try {
+      if (!data.projectId) {
+        throw new Error('프로젝트 ID가 필요합니다.');
+      }
+      const response = await axios.put<Issue>(`${BASE_URL}/projects/${data.projectId}/issues/${issueId}`, data);
+      return response.data;
+    } catch (error) {
+      console.error('이슈 수정 실패:', error);
+      throw error;
     }
-    const response = await axios.put<Issue>(`${BASE_URL}/issues/${issueId}`, {
-      ...updates,
-      userId: user.id
-    });
-    return response.data;
   },
 
-  deleteIssue: async (issueId: number): Promise<void> => {
-    const user = getCurrentUser();
-    if (!user) {
-      throw new Error('로그인이 필요합니다.');
+  deleteIssue: async (issueId: number, projectId: number): Promise<void> => {
+    try {
+      await axios.delete(`${BASE_URL}/projects/${projectId}/issues/${issueId}`);
+    } catch (error) {
+      console.error('이슈 삭제 실패:', error);
+      throw error;
     }
-    await axios.delete(`${BASE_URL}/issues/${issueId}?userId=${user.id}`);
   },
 
   moveIssue: async (issueId: number, targetColumnId: number, order: number): Promise<void> => {

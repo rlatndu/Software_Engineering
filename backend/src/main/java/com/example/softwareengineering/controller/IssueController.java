@@ -9,8 +9,10 @@ import com.example.softwareengineering.dto.SubIssueRequest;
 import com.example.softwareengineering.dto.SubIssueResponse;
 import com.example.softwareengineering.entity.Attachment;
 import com.example.softwareengineering.entity.Issue;
+import com.example.softwareengineering.entity.User;
 import com.example.softwareengineering.repository.AttachmentRepository;
 import com.example.softwareengineering.repository.IssueRepository;
+import com.example.softwareengineering.repository.UserRepository;
 import com.example.softwareengineering.service.IssueService;
 import com.example.softwareengineering.service.SubIssueService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,6 +27,10 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -55,6 +61,8 @@ public class IssueController {
     private AttachmentRepository attachmentRepository;
     @Autowired
     private SubIssueService subIssueService;
+    @Autowired
+    private UserRepository userRepository;
 
     @PostMapping
     @Operation(summary = "이슈 생성", description = "새로운 이슈를 생성합니다.")
@@ -104,26 +112,57 @@ public class IssueController {
         }
     }
 
-    @Operation(summary = "이슈 수정", description = "이슈 담당자만 수정할 수 있습니다.")
+    @Operation(summary = "이슈 수정", description = "이슈 담당자, ADMIN, PM이 수정할 수 있습니다.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "수정 성공"),
         @ApiResponse(responseCode = "403", description = "권한 없음")
     })
     @PutMapping("/{issueId}")
-    public ResponseEntity<IssueResponse> updateIssue(@PathVariable Long issueId, @RequestBody IssueUpdateRequest request, @RequestParam Long userId) {
-        IssueResponse response = issueService.updateIssue(issueId, request, userId);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<?> updateIssue(
+            @PathVariable Long issueId,
+            @RequestBody IssueUpdateRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            User user = userRepository.findByUserId(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException("사용자를 찾을 수 없습니다."));
+            
+            IssueResponse response = issueService.updateIssue(issueId, request, user.getId());
+            return ResponseEntity.ok(response);
+        } catch (CustomException e) {
+            log.error("이슈 수정 실패: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("이슈 수정 중 오류 발생", e);
+            return ResponseEntity.internalServerError()
+                .body(Map.of("message", "서버 내부 오류가 발생했습니다."));
+        }
     }
 
-    @Operation(summary = "이슈 삭제", description = "이슈 담당자만 삭제할 수 있습니다.")
+    @Operation(summary = "이슈 삭제", description = "이슈 담당자, ADMIN, PM이 삭제할 수 있습니다.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "삭제 성공"),
         @ApiResponse(responseCode = "403", description = "권한 없음")
     })
     @DeleteMapping("/{issueId}")
-    public ResponseEntity<String> deleteIssue(@PathVariable Long issueId, @RequestParam Long userId) {
-        issueService.deleteIssue(issueId, userId);
-        return ResponseEntity.ok("이슈가 삭제되었습니다.");
+    public ResponseEntity<?> deleteIssue(
+            @PathVariable Long issueId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            User user = userRepository.findByUserId(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException("사용자를 찾을 수 없습니다."));
+            
+            issueService.deleteIssue(issueId, user.getId());
+            return ResponseEntity.ok(Map.of("message", "이슈가 삭제되었습니다."));
+        } catch (CustomException e) {
+            log.error("이슈 삭제 실패: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("이슈 삭제 중 오류 발생", e);
+            return ResponseEntity.internalServerError()
+                .body(Map.of("message", "서버 내부 오류가 발생했습니다."));
+        }
     }
 
     @Operation(summary = "이슈 첨부파일 업로드", description = "이슈에 첨부파일을 업로드합니다.")
