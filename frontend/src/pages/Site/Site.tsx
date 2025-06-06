@@ -1,11 +1,15 @@
-import { Bell, Settings, User, MoreVertical } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { Bell, Settings, User, MoreVertical, LogOut, UserCircle, Settings as SettingsIcon } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState, useRef } from "react";
 import siteService, { Site } from "../../api/siteService";
 import { recentSiteService } from "../../api/recentSiteService";
+import { useAuth } from "../../contexts/AuthContext";
+import ResultPopup from "../../components/ResultPopup";
 import "./Site.css";
 
 const SitePage = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [sites, setSites] = useState<Site[]>([]);
   const [recentSites, setRecentSites] = useState<Site[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -14,6 +18,9 @@ const SitePage = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState<number | null>(null);
+  const [activePopup, setActivePopup] = useState<'settings' | 'profile' | null>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const [popup, setPopup] = useState<{ type: string | null, message?: string }>({ type: null });
 
   // 드롭다운 외부 클릭 시 닫기
   useEffect(() => {
@@ -31,6 +38,33 @@ const SitePage = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showDropdown]);
+
+  // 팝업 외부 클릭 감지
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
+        setActivePopup(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
+    localStorage.removeItem('user');
+    sessionStorage.removeItem('user');
+    setActivePopup(null);
+    setPopup({ type: 'result', message: '로그아웃되었습니다.' });
+    
+    // 1초 후 팝업을 닫고 landing 페이지로 이동
+    setTimeout(() => {
+      setPopup({ type: null });
+      navigate('/');
+    }, 1000);
+  };
 
   const fetchSites = async () => {
     try {
@@ -111,10 +145,52 @@ const SitePage = () => {
             <input type="text" placeholder="검색" className="search-input" />
           </div>
 
-          <div className="icon-group">
-            <Bell className="icon" />
-            <Settings className="icon" />
-            <User className="icon" />
+          <div className="icon-group" ref={popupRef}>
+            <div className="icon-wrapper">
+              <Settings 
+                className="icon"
+                onClick={() => setActivePopup(activePopup === 'settings' ? null : 'settings')}
+              />
+              {activePopup === 'settings' && (
+                <div className="popup-menu">
+                  <div className="popup-menu-item">
+                    <SettingsIcon size={16} />
+                    <span>설정</span>
+                  </div>
+                  <div className="popup-menu-divider" />
+                  <div className="popup-menu-item">
+                    <span>테마 설정</span>
+                  </div>
+                  <div className="popup-menu-item">
+                    <span>알림 설정</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="icon-wrapper">
+              <User 
+                className="icon"
+                onClick={() => setActivePopup(activePopup === 'profile' ? null : 'profile')}
+              />
+              {activePopup === 'profile' && (
+                <div className="popup-menu">
+                  <div className="profile-menu-header">
+                    <div className="profile-menu-name">{user?.name || '사용자'}</div>
+                    <div className="profile-menu-email">{user?.email || ''}</div>
+                  </div>
+                  <div className="popup-menu-item">
+                    <UserCircle size={16} />
+                    <span>프로필</span>
+                  </div>
+                  <div className="popup-menu-divider" />
+                  <div className="popup-menu-item" onClick={handleLogout}>
+                    <LogOut size={16} />
+                    <span>로그아웃</span>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
@@ -242,6 +318,13 @@ const SitePage = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {popup.type === 'result' && (
+        <ResultPopup 
+          message={popup.message || ''} 
+          onClose={() => setPopup({ type: null })} 
+        />
       )}
     </div>
   );
