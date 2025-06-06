@@ -11,6 +11,7 @@ import IdFind from "./pages/FindId/IdFind";
 import PasswordFind from "./pages/FindId/PasswordFind";
 import SiteCreatePage from './pages/Create/Site/site';
 import ProjectCreatePage from "./pages/Create/Project/project";
+import NotificationPage from "./pages/Notification/NotificationPage";
 import { AuthProvider } from './contexts/AuthContext';
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
           <Route path="/id_find" element={<IdFind />} />
           <Route path="/password_find" element={<PasswordFind />} />
           <Route path="/sites/:siteId/main" element={<Main />} />
+          <Route path="/notifications" element={<NotificationPage />} />
           <Route path="/home" element={<Home />} />
           <Route path="/site" element={<Site />} />
           <Route path="/Create/Site" element={<SiteCreatePage />} />

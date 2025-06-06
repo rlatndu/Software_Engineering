@@ -12,6 +12,7 @@ import UnresolvedIssueView from './UnresolvedIssueView';
 import { useAuth } from "../../contexts/AuthContext";
 import { UserRole } from "../../types/role";
 import ResultPopup from "../../components/ResultPopup";
+import siteService, { Site } from "../../api/siteService";
 
 type TabType = 'recommend' | 'recent' | 'project' | 'dashboard' | 'team';
 type RecommendSubTab = 'recent' | 'unresolved';
@@ -25,6 +26,15 @@ const tabList: { id: TabType; label: string; icon: string }[] = [
 ];
 
 const subtabs = ['recent', 'unresolved'] as const;
+
+interface Notification {
+  id: number;
+  type: 'comment' | 'mention' | 'issue' | 'project';
+  message: string;
+  time: string;
+  isRead: boolean;
+  icon: 'bell' | 'mail';
+}
 
 const Main = () => {
   const { user, loading: authLoading } = useAuth();
@@ -50,6 +60,60 @@ const Main = () => {
   const [activePopup, setActivePopup] = useState<'notifications' | 'settings' | 'profile' | null>(null);
   const popupRef = useRef<HTMLDivElement>(null);
   const [popup, setPopup] = useState<{ type: string | null, message?: string }>({ type: null });
+  const [notifications, setNotifications] = useState<Notification[]>([
+    {
+      id: 1,
+      type: 'comment',
+      message: '새로운 댓글이 달렸습니다: "이 부분 확인해주세요"',
+      time: '방금 전',
+      isRead: false,
+      icon: 'bell'
+    },
+    {
+      id: 2,
+      type: 'mention',
+      message: '@사용자님이 회의록에서 멘션했습니다',
+      time: '10분 전',
+      isRead: false,
+      icon: 'mail'
+    },
+    {
+      id: 3,
+      type: 'issue',
+      message: '새로운 이슈가 할당되었습니다: "로그인 버그 수정"',
+      time: '1시간 전',
+      isRead: false,
+      icon: 'bell'
+    },
+    {
+      id: 4,
+      type: 'project',
+      message: '프로젝트 "슬라임"에 초대되었습니다',
+      time: '3시간 전',
+      isRead: true,
+      icon: 'mail'
+    },
+    {
+      id: 5,
+      type: 'issue',
+      message: '이슈 상태가 변경되었습니다: "완료됨"',
+      time: '5시간 전',
+      isRead: true,
+      icon: 'bell'
+    }
+  ]);
+
+  const unreadCount = notifications.filter(notification => !notification.isRead).length;
+
+  const handleNotificationClick = (notificationId: number) => {
+    setNotifications(prev => 
+      prev.map(notification => 
+        notification.id === notificationId 
+          ? { ...notification, isRead: true }
+          : notification
+      )
+    );
+  };
 
   // 에러 메시지 처리
   useEffect(() => {
@@ -352,6 +416,21 @@ const Main = () => {
     }, 1000);
   };
 
+  const [sites, setSites] = useState<Site[]>([]);
+
+  useEffect(() => {
+    const fetchSites = async () => {
+      try {
+        const response = await siteService.getMySites();
+        setSites(response || []);
+      } catch (error) {
+        console.error('사이트 목록을 불러오는데 실패했습니다:', error);
+      }
+    };
+
+    fetchSites();
+  }, []);
+
   useEffect(() => {
     fetchProjects();
   }, [siteId, location.key]);
@@ -414,22 +493,38 @@ const Main = () => {
             <div className="icon-wrapper">
               <Bell 
                 className="icon"
-                onClick={() => setActivePopup(activePopup === 'notifications' ? null : 'notifications')}
+                onClick={() => {
+                  if (activePopup === 'notifications') {
+                    setActivePopup(null);
+                  } else {
+                    setActivePopup('notifications');
+                  }
+                }}
               />
-              <div className="notification-badge">2</div>
+              {unreadCount > 0 && (
+                <div className="notification-badge">{unreadCount}</div>
+              )}
               {activePopup === 'notifications' && (
-                <div className="popup-menu">
+                <div className="popup-menu notifications-menu">
                   <div className="popup-menu-header">
                     <h3>알림</h3>
+                    <Link to="/notifications" className="view-all-link" onClick={() => setActivePopup(null)}>
+                      모두 보기
+                    </Link>
                   </div>
-                  <div className="popup-menu-item">
-                    <BellIcon size={16} />
-                    <span>새로운 댓글이 달렸습니다.</span>
-                  </div>
-                  <div className="popup-menu-item">
-                    <Mail size={16} />
-                    <span>새로운 멘션이 있습니다.</span>
-                  </div>
+                  {notifications.map(notification => (
+                    <div 
+                      key={notification.id}
+                      className={`popup-menu-item ${!notification.isRead ? 'unread' : ''}`}
+                      onClick={() => handleNotificationClick(notification.id)}
+                    >
+                      {notification.icon === 'bell' ? <BellIcon size={16} /> : <Mail size={16} />}
+                      <div className="notification-content">
+                        <div className="notification-message">{notification.message}</div>
+                        <div className="notification-time">{notification.time}</div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -463,13 +558,29 @@ const Main = () => {
               />
               {activePopup === 'profile' && (
                 <div className="popup-menu">
-                  <div className="profile-menu-header">
-                    <div className="profile-menu-name">{user?.name || '사용자'}</div>
-                    <div className="profile-menu-email">{user?.email || ''}</div>
+                  <div className="profile-header">
+                    <h4 className="profile-name">{user?.name || '사용자'}</h4>
+                    <p className="profile-email">{user?.email}</p>
                   </div>
-                  <div className="popup-menu-item">
-                    <UserCircle size={16} />
-                    <span>프로필</span>
+                  <div className="popup-menu-section">
+                    <h3>내 사이트</h3>
+                    <Link to="/site" className="view-all-link" onClick={() => setActivePopup(null)}>
+                      사이트로 이동
+                    </Link>
+                  </div>
+                  <div className="sites-list">
+                    {sites.map(site => (
+                      <div 
+                        key={site.id} 
+                        className="site-item"
+                        onClick={() => {
+                          setActivePopup(null);
+                          navigate(`/sites/${site.id}/main`);
+                        }}
+                      >
+                        {site.name}
+                      </div>
+                    ))}
                   </div>
                   <div className="popup-menu-divider" />
                   <div className="popup-menu-item" onClick={handleLogout}>

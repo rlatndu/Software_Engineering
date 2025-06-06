@@ -24,7 +24,7 @@ body, html {
   top: 0;
   left: 0;
   right: 0;
-  height: 4rem;
+  height: 2rem;
   background-color: white;
   border-bottom: 0.0625rem solid #e5e7eb;
   display: flex;
@@ -324,4 +324,111 @@ body, html {
 .error-text {
   color: #ff4444;
   margin: 10px 0;
+}
+
+.popup-menu-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.popup-menu-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.view-all-link {
+  font-size: 12px;
+  color: #3b82f6;
+  text-decoration: none;
+}
+
+.view-all-link:hover {
+  text-decoration: underline;
+}
+
+/* 프로필 팝업 스타일 */
+.profile-header {
+  padding: 16px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.profile-name {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: #333;
+}
+
+.profile-email {
+  font-size: 14px;
+  color: #666;
+  margin: 4px 0 0 0;
+}
+
+.popup-menu-section {
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.popup-menu-section h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.sites-list {
+  padding: 8px 0;
+}
+
+.site-item {
+  padding: 8px 16px;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+}
+
+.site-item:hover {
+  background-color: #f5f5f5;
+}
+
+.view-all-link {
+  font-size: 12px;
+  color: #1a73e8;
+  text-decoration: none;
+}
+
+.view-all-link:hover {
+  text-decoration: underline;
+}
+
+.popup-menu-item {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: #333;
+}
+
+.popup-menu-item:hover {
+  background-color: #f5f5f5;
+}
+
+.popup-menu-item:last-child {
+  color: #d32f2f;
+}
+
+.popup-menu-item:last-child svg {
+  color: #d32f2f;
+}
+
+.popup-menu-item:last-child:hover {
+  background-color: #fdeaea;
 }
