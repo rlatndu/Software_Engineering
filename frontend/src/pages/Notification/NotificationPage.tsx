@@ -80,50 +80,45 @@ const NotificationPage = () => {
   };
 
   if (loading) {
-    return <div className="loading">로딩 중...</div>;
+    return <div className="n-loading">로딩 중...</div>;
   }
 
   return (
-    <div className="notification-page">
-      <header className="top-bar">
-        <div className="header-left">
-          <button className="back-button" onClick={() => navigate(-1)}>
+    <div className="n-notification-page">
+      <header className="n-top-bar">
+        <div className="n-header-left">
+          <button className="n-back-button" onClick={() => navigate(-1)}>
             <ArrowLeft />
           </button>
           <h1>알림</h1>
         </div>
-        <div className="icon-group">
-          <Bell className="icon" />
-          <Settings className="icon" />
-          <User className="icon" />
-        </div>
       </header>
 
-      <main className="notification-content">
-        <div className="notification-header">
+      <main className="n-notification-content">
+        <div className="n-notification-header">
           <h2>알림 목록</h2>
-          <button className="read-all-button" onClick={handleMarkAllAsRead}>
+          <button className="n-read-all-button" onClick={handleMarkAllAsRead}>
             모두 읽음 표시
           </button>
         </div>
 
-        <div className="notification-list">
+        <div className="n-notification-list">
           {notifications.length === 0 ? (
-            <div className="empty-notifications">
+            <div className="n-empty-notifications">
               <p>알림이 없습니다.</p>
             </div>
           ) : (
             notifications.map(notification => (
               <div 
                 key={notification.id} 
-                className={`notification-item ${notification.isRead ? 'read' : 'unread'}`}
+                className={`n-notification-item ${notification.isRead ? 'read' : 'unread'}`}
               >
-                <div className="notification-icon">
-                  {!notification.isRead && <div className="unread-dot" />}
+                <div className="n-notification-icon">
+                  {!notification.isRead && <div className="n-unread-dot" />}
                 </div>
-                <div className="notification-details">
-                  <p className="notification-message">{notification.message}</p>
-                  <span className="notification-time">{formatDate(notification.createdAt)}</span>
+                <div className="n-notification-details">
+                  <p className="n-notification-message">{notification.message}</p>
+                  <span className="n-notification-time">{formatDate(notification.createdAt)}</span>
                 </div>
               </div>
             ))

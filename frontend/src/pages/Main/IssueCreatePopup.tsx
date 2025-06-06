@@ -119,24 +119,24 @@ const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate, 
   };
 
   return (
-    <div className="popup-overlay">
-      <div className="popup-content issue-create-popup">
-        <div className="popup-header">
+    <div className="n-popup-overlay">
+      <div className="n-popup-content n-issue-create-popup">
+        <div className="n-popup-header">
           <h2>이슈 만들기</h2>
-          <button className="close-button" onClick={onClose}>×</button>
+          <button className="n-close-button" onClick={onClose}>×</button>
         </div>
 
-        <div className="form-group">
+        <div className="n-form-group">
           <label>프로젝트</label>
           <input
             type="text"
             value={projectName}
             disabled
-            className="disabled-input"
+            className="n-disabled-input"
           />
         </div>
 
-        <div className="form-group">
+        <div className="n-form-group">
           <label>상태 *</label>
           <select
             value={form.status}
@@ -153,7 +153,7 @@ const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate, 
           </select>
         </div>
 
-        <div className="form-group">
+        <div className="n-form-group">
           <label>제목 *</label>
           <input
             type="text"
@@ -163,7 +163,7 @@ const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate, 
           />
         </div>
 
-        <div className="form-group">
+        <div className="n-form-group">
           <label>이슈 설명</label>
           <textarea
             value={form.description}
@@ -172,16 +172,16 @@ const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate, 
           />
         </div>
 
-        <div className="form-group-row date-time-row">
-          <div className="datetime-inputs-column">
+        <div className="n-form-group-row n-date-time-row">
+          <div className="n-datetime-inputs-column">
             <label>시작 날짜</label>
             <input
-              className="date-display-input"
+              className="n-date-display-input"
               type="text"
               value={`${range.startDate.getFullYear()}년    ${range.startDate.getMonth() + 1}월    ${range.startDate.getDate()}일`}
               readOnly
             />
-            <div className="time-inputs">
+            <div className="n-time-inputs">
               <select value={form.startTime.ampm} onChange={(e) => handleTimeChange('startTime', 'ampm', e.target.value)}>
                 <option value="오전">오전</option>
                 <option value="오후">오후</option>
@@ -202,12 +202,12 @@ const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate, 
 
             <label>종료 날짜</label>
             <input
-              className="date-display-input"
+              className="n-date-display-input"
               type="text"
               value={`${range.endDate.getFullYear()}년    ${range.endDate.getMonth() + 1}월    ${range.endDate.getDate()}일`}
               readOnly
             />
-            <div className="time-inputs">
+            <div className="n-time-inputs">
               <select value={form.endTime.ampm} onChange={(e) => handleTimeChange('endTime', 'ampm', e.target.value)}>
                 <option value="오전">오전</option>
                 <option value="오후">오후</option>
@@ -227,7 +227,7 @@ const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate, 
             </div>
           </div>
 
-          <div className="calendar-wrapper">
+          <div className="n-calendar-wrapper">
             <DateRange
               ranges={[range]}
               onChange={(item) => setRange(item.selection)}
@@ -238,7 +238,7 @@ const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate, 
           </div>
         </div>
 
-        <div className="form-group">
+        <div className="n-form-group">
           <label>담당자 *</label>
           <select
             value={form.assigneeId}
@@ -259,17 +259,17 @@ const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate, 
           </select>
         </div>
 
-        <div className="form-group">
+        <div className="n-form-group">
           <label>첨부 파일</label>
-          <div className="file-drop-area">첨부파일을 마우스로 끌어 놓아보세요.</div>
+          <div className="n-file-drop-area">첨부파일을 마우스로 끌어 놓아보세요.</div>
         </div>
 
-        <div className="popup-footer right-align">
-          <div className="footer-actions">
-            <div className="reporter">보고자: {user?.userId}</div>
-            <div className="popup-buttons">
-              <button className="cancel-button" onClick={onClose}>취소</button>
-              <button className="create-button" onClick={handleSubmit}>만들기</button>
+        <div className="n-popup-footer n-right-align">
+          <div className="n-footer-actions">
+            <div className="n-reporter">보고자: {user?.userId}</div>
+            <div className="n-popup-buttons">
+              <button className="n-cancel-button" onClick={onClose}>취소</button>
+              <button className="n-create-button" onClick={handleSubmit}>만들기</button>
             </div>
           </div>
         </div>

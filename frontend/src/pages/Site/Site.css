@@ -24,7 +24,7 @@ body, html {
   top: 0;
   left: 0;
   right: 0;
-  height: 2rem;
+  height: 4rem;
   background-color: white;
   border-bottom: 0.0625rem solid #e5e7eb;
   display: flex;
