@@ -190,9 +190,42 @@ export const projectService = {
         return response.data;
     },
 
-    updateIssue: async (projectId: number, issueId: number, data: any) => {
-        const response = await axiosInstance.put(`/projects/${projectId}/issues/${issueId}`, data);
-        return response.data;
+    // 이슈 수정
+    updateIssue: async (projectId: number, issueId: number, data: {
+        title: string;
+        description: string;
+        status: string;
+        startDate: string;
+        endDate: string;
+        assigneeId: string;
+    }): Promise<any> => {
+        try {
+            // 로컬 스토리지나 세션 스토리지에서 토큰 가져오기
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            if (!token) {
+                throw new Error('로그인이 필요합니다.');
+            }
+
+            const response = await axiosInstance.put(`/projects/${projectId}/issues/${issueId}`, {
+                title: data.title,
+                description: data.description,
+                status: data.status,
+                startDate: data.startDate,
+                endDate: data.endDate,
+                assigneeId: data.assigneeId
+            }, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            return response.data;
+        } catch (error: any) {
+            if (error.response?.data?.message) {
+                throw new Error(error.response.data.message);
+            }
+            throw error;
+        }
     },
 
     deleteIssue: async (projectId: number, issueId: number) => {

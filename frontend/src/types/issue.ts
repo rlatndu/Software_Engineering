@@ -1,12 +1,26 @@
 export interface Issue {
     id: number;
     title: string;
+    description: string;
     status: string;
-    reporter: string;
-    description?: string;
-    projectId: number;
-    createdAt: string;
-    updatedAt: string;
+    startDate?: string;
+    endDate?: string;
+    assigneeId?: number;
+    assignee?: {
+        id: number;
+        name: string;
+    };
+    reporterId?: number;
+    reporter?: {
+        id: number;
+        name: string;
+    };
+    createdAt?: string;
+    updatedAt?: string;
+    columnId?: number;
+    order?: number;
+    projectId?: number;
+    projectName?: string;
 }
 
 export interface CreateIssueRequest {
@@ -21,6 +35,9 @@ export interface UpdateIssueRequest {
     title?: string;
     description?: string;
     status?: string;
+    startDate?: string;
+    endDate?: string;
+    assigneeId?: string;
 }
 
 export interface BacklogIssue extends Issue {

@@ -68,24 +68,32 @@ const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate, 
     const startDate = new Date(range.startDate);
     const endDate = new Date(range.endDate);
 
+    // 시작 시간 설정
     if (form.startTime.hour && form.startTime.minute) {
-      const hour = parseInt(form.startTime.hour) + (form.startTime.ampm === '오후' ? 12 : 0);
-      startDate.setHours(hour);
-      startDate.setMinutes(parseInt(form.startTime.minute));
+      let hour = parseInt(form.startTime.hour);
+      if (form.startTime.ampm === '오후' && hour !== 12) hour += 12;
+      if (form.startTime.ampm === '오전' && hour === 12) hour = 0;
+      startDate.setHours(hour, parseInt(form.startTime.minute), 0);
+    } else {
+      startDate.setHours(0, 0, 0);
     }
 
+    // 종료 시간 설정
     if (form.endTime.hour && form.endTime.minute) {
-      const hour = parseInt(form.endTime.hour) + (form.endTime.ampm === '오후' ? 12 : 0);
-      endDate.setHours(hour);
-      endDate.setMinutes(parseInt(form.endTime.minute));
+      let hour = parseInt(form.endTime.hour);
+      if (form.endTime.ampm === '오후' && hour !== 12) hour += 12;
+      if (form.endTime.ampm === '오전' && hour === 12) hour = 0;
+      endDate.setHours(hour, parseInt(form.endTime.minute), 0);
+    } else {
+      endDate.setHours(23, 59, 59);
     }
 
     const newIssue = {
       title: form.title.trim(),
       description: form.description.trim(),
       status: form.status,
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
+      startDate: new Date(startDate.getTime() - startDate.getTimezoneOffset() * 60000).toISOString(),
+      endDate: new Date(endDate.getTime() - endDate.getTimezoneOffset() * 60000).toISOString(),
       columnId: parseInt(selectedColumn),
       assigneeId: form.assigneeId,
       reporterId: user?.userId,

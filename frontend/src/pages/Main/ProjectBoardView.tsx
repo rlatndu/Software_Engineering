@@ -16,6 +16,8 @@ import { canManageProject, canManageIssues, canCreateIssue } from '../../utils/p
 import { useAuth } from '../../contexts/AuthContext';
 import { Project } from '../../types/project';
 import commentService from '../../api/commentService';
+import projectService from '../../api/projectService';
+import { formatDate, formatDateShort } from '../../utils/dateUtils';
 
 interface ProjectBoardViewProps {
   project: Project;
@@ -40,6 +42,17 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
   const [editCommentContent, setEditCommentContent] = useState('');
   const [menuOpenComment, setMenuOpenComment] = useState<number | null>(null);
   const commentDropdownRef = useRef<HTMLDivElement>(null);
+
+  const [selectedIssue, setSelectedIssue] = useState<BoardIssue | null>(null);
+  const [menuOpenColumn, setMenuOpenColumn] = useState<number | null>(null);
+  const [menuOpenIssue, setMenuOpenIssue] = useState<number | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingIssue, setEditingIssue] = useState<BoardIssue | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [selectedColumn, setSelectedColumn] = useState<number | null>(null);
+
+  const columnDropdownRef = useRef<HTMLDivElement>(null);
+  const issueDropdownRef = useRef<HTMLDivElement>(null);
 
   const loadBoardData = async () => {
     try {
@@ -265,8 +278,8 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
         columnId: columnId,
         projectId: project.id,
         reporterId: user?.userId,
-        startDate: issueData.startDate || new Date().toISOString(),
-        endDate: issueData.endDate || new Date().toISOString()
+        startDate: issueData.startDate || new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString(),
+        endDate: issueData.endDate || new Date(new Date().setHours(23, 59, 59, 999) - new Date().getTimezoneOffset() * 60000).toISOString()
       };
 
       console.log('Creating issue with data:', createData);
@@ -410,17 +423,6 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
     }
   };
   
-  const [selectedIssue, setSelectedIssue] = useState<BoardIssue | null>(null);
-  const [menuOpenColumn, setMenuOpenColumn] = useState<number | null>(null);
-  const [menuOpenIssue, setMenuOpenIssue] = useState<number | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingIssue, setEditingIssue] = useState<BoardIssue | null>(null);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [selectedColumn, setSelectedColumn] = useState<number | null>(null);
-
-  const columnDropdownRef = useRef<HTMLDivElement>(null);
-  const issueDropdownRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
@@ -591,7 +593,7 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
                                   >
                                     <div>
                                       <div className="issue-title">{issue.title}</div>
-                                      <div className="issue-due">마감일: {issue.endDate}</div>
+                                      <div className="issue-due">마감일: {formatDateShort(issue.endDate)}</div>
                                       <div className="issue-assignee">담당자: {issue.assigneeId}</div>
                                     </div>
                                     <div className="menu-container">
@@ -771,8 +773,8 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
                       <h4>세부사항</h4>
                       <p><strong>담당자:</strong> {selectedIssue.assigneeId}</p>
                       <p><strong>상태:</strong> {selectedIssue.status}</p>
-                      <p><strong>시작일:</strong> {selectedIssue.startDate}</p>
-                      <p><strong>마감일:</strong> {selectedIssue.endDate}</p>
+                      <p><strong>시작일:</strong> {formatDate(selectedIssue.startDate)}</p>
+                      <p><strong>마감일:</strong> {formatDate(selectedIssue.endDate)}</p>
                       <p><strong>보고자:</strong> {selectedIssue.reporterId}</p>
                     </div>  
                   </div>
@@ -786,35 +788,47 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
           issue={{
             id: editingIssue.id,
             title: editingIssue.title,
-            description: editingIssue.description || ''
+            description: editingIssue.description || '',
+            status: editingIssue.status || 'TODO',
+            start_date: editingIssue.startDate,
+            end_date: editingIssue.endDate,
+            assignee_id: editingIssue.assigneeId || null,
+            assignee_name: editingIssue.assigneeId || ''
           }}
-          onClose={() => {
-            setIsEditModalOpen(false);
-            setEditingIssue(null);
-          }}
-          onSave={async (updatedIssue) => {
+          projectId={project.id}
+          projectName={project.name}
+          onClose={() => setIsEditModalOpen(false)}
+          onSave={async (updated) => {
             try {
-              const result = await boardService.updateIssue(updatedIssue.id, {
-                ...editingIssue,
-                ...updatedIssue,
-                projectId: project.id
+              const response = await projectService.updateIssue(project.id, editingIssue.id, {
+                title: updated.title,
+                description: updated.description,
+                status: updated.status,
+                startDate: updated.startDate,
+                endDate: updated.endDate,
+                assigneeId: updated.assigneeId
               });
+              
+              // 이슈 목록 업데이트
               setIssuesByColumn(prev => {
-                const updated = { ...prev };
-                for (const colId in updated) {
-                  updated[colId] = updated[colId].map(issue =>
-                    issue.id === result.id ? result : issue
+                const updatedColumns = { ...prev };
+                for (const colId in updatedColumns) {
+                  updatedColumns[colId] = updatedColumns[colId].map(issue =>
+                    issue.id === updated.id ? { ...issue, ...response } : issue
                   );
                 }
-                return updated;
+                return updatedColumns;
               });
+
               setIsEditModalOpen(false);
-              setEditingIssue(null);
-              setPopup({ type: 'result', payload: { message: '이슈가 수정되었습니다.' } });
-            } catch (err) {
               setPopup({
-                type: 'accessDenied',
-                payload: { message: '이슈 수정 권한이 없습니다.' }
+                type: 'result',
+                payload: { message: '이슈가 성공적으로 수정되었습니다.' }
+              });
+            } catch (error: any) {
+              setPopup({
+                type: 'result',
+                payload: { message: error.message || '이슈 수정에 실패했습니다.' }
               });
             }
           }}
@@ -829,8 +843,8 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
 
 {popup.type === 'confirmDelete' && (
   <ConfirmPopup
-    title="정말 이 이슈를 삭제하시겠습니까?"
-    message={popup.payload.title}
+    title="이슈 삭제"
+    message={`[ ${popup.payload.title} ] 이슈를 삭제하시겠습니까?`}
     onConfirm={handleConfirmDelete}
     onCancel={() => setPopup({ type: null })}
   />
