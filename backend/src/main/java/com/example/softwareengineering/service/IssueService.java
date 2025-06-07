@@ -13,7 +13,6 @@ import com.example.softwareengineering.repository.UserRepository;
 import com.example.softwareengineering.repository.BoardColumnRepository;
 import com.example.softwareengineering.repository.ProjectMemberRepository;
 import com.example.softwareengineering.repository.SiteMemberRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,19 +22,32 @@ import java.util.stream.Collectors;
 import java.util.ArrayList;
 
 @Service
+@Transactional(readOnly = true)
 public class IssueService {
-    @Autowired
-    private IssueRepository issueRepository;
-    @Autowired
-    private ProjectRepository projectRepository;
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private BoardColumnRepository columnRepository;
-    @Autowired
-    private ProjectMemberRepository projectMemberRepository;
-    @Autowired
-    private SiteMemberRepository siteMemberRepository;
+    private final IssueRepository issueRepository;
+    private final ProjectRepository projectRepository;
+    private final UserRepository userRepository;
+    private final BoardColumnRepository columnRepository;
+    private final ProjectMemberRepository projectMemberRepository;
+    private final SiteMemberRepository siteMemberRepository;
+    private final ProjectService projectService;
+
+    public IssueService(
+            IssueRepository issueRepository,
+            ProjectRepository projectRepository,
+            UserRepository userRepository,
+            BoardColumnRepository columnRepository,
+            ProjectMemberRepository projectMemberRepository,
+            SiteMemberRepository siteMemberRepository,
+            ProjectService projectService) {
+        this.issueRepository = issueRepository;
+        this.projectRepository = projectRepository;
+        this.userRepository = userRepository;
+        this.columnRepository = columnRepository;
+        this.projectMemberRepository = projectMemberRepository;
+        this.siteMemberRepository = siteMemberRepository;
+        this.projectService = projectService;
+    }
 
     // 이슈 생성 (프로젝트 관리자만)
     public IssueResponse createIssue(IssueCreateRequest request) {
@@ -141,6 +153,7 @@ public class IssueService {
     }
 
     // 이슈 수정 (담당자, ADMIN, PM 가능)
+    @Transactional
     public IssueResponse updateIssue(Long issueId, IssueUpdateRequest request, Long userId) {
         Issue issue = issueRepository.findById(issueId)
             .orElseThrow(() -> new CustomException("이슈를 찾을 수 없습니다."));
@@ -177,12 +190,41 @@ public class IssueService {
             throw new CustomException("이슈를 수정할 권한이 없습니다.");
         }
 
-        if (request.getTitle() != null) issue.setTitle(request.getTitle());
-        if (request.getDescription() != null) issue.setDescription(request.getDescription());
-        if (request.getStatus() != null) issue.setStatus(IssueStatus.valueOf(request.getStatus()));
-        if (request.getStartDate() != null) issue.setStartDate(request.getStartDate());
-        if (request.getEndDate() != null) issue.setEndDate(request.getEndDate());
-        if (request.getOrder() != null) issue.setOrderIndex(request.getOrder());
+        // 상태 변경 전의 상태 저장
+        String previousStatus = issue.getStatus().toString();
+        
+        // 상태가 변경되었는지 확인
+        if (request.getStatus() != null && !request.getStatus().equals(previousStatus)) {
+            // 상태 변경 시 활동 로그 기록
+            projectService.recordIssueActivity(
+                issue.getProject().getId(),
+                userId,
+                issueId,
+                RecentWork.ActionType.STATUS_CHANGE,
+                previousStatus,
+                request.getStatus()
+            );
+        }
+
+        // 이슈 정보 업데이트
+        if (request.getTitle() != null) {
+            issue.setTitle(request.getTitle());
+        }
+        if (request.getDescription() != null) {
+            issue.setDescription(request.getDescription());
+        }
+        if (request.getStatus() != null) {
+            issue.setStatus(IssueStatus.valueOf(request.getStatus()));
+        }
+        if (request.getStartDate() != null) {
+            issue.setStartDate(request.getStartDate());
+        }
+        if (request.getEndDate() != null) {
+            issue.setEndDate(request.getEndDate());
+        }
+        if (request.getOrder() != null) {
+            issue.setOrderIndex(request.getOrder());
+        }
         
         // 담당자 변경
         if (request.getAssigneeId() != null && !request.getAssigneeId().equals(issue.getAssignee() != null ? issue.getAssignee().getUserId() : null)) {
@@ -193,6 +235,7 @@ public class IssueService {
         
         issue.setUpdatedBy(user);
         Issue saved = issueRepository.save(issue);
+
         return toResponse(saved);
     }
 

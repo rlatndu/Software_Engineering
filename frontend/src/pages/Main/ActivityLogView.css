@@ -1,0 +1,68 @@
+.activity-log-container {
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.no-activities {
+  text-align: center;
+  padding: 40px 0;
+  color: #666;
+}
+
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.activity-item {
+  padding: 16px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.activity-item:hover {
+  background-color: #f8f9fa;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.activity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.user-name {
+  font-weight: 600;
+  color: #333;
+}
+
+.activity-time {
+  font-size: 0.9em;
+  color: #666;
+}
+
+.activity-content {
+  color: #444;
+}
+
+.activity-content p {
+  margin: 0 0 8px 0;
+  line-height: 1.5;
+}
+
+.project-name {
+  display: inline-block;
+  font-size: 0.9em;
+  color: #666;
+  background-color: #f1f3f5;
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-top: 8px;
+} 

@@ -3,7 +3,7 @@ import { Bell, Settings, User, ChevronDown, LogOut, UserCircle, Mail, Bell as Be
 import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import ProjectTab from "./ProjectTab";
 import { Project } from "../../types/project";
-import { projectService } from "../../api/projectService";
+import { projectService, RecentWork } from "../../api/projectService";
 import { recentProjectService } from "../../api/recentService";
 import "./Main.css";
 import "./Mainrecommend.css";
@@ -14,6 +14,7 @@ import { UserRole } from "../../types/role";
 import ResultPopup from "../../components/ResultPopup";
 import siteService, { Site } from "../../api/siteService";
 import ProjectInvite from "../Team/ProjectInvite";
+import ActivityLogView from './ActivityLogView';
 
 type TabType = 'recommend' | 'recent' | 'project' | 'dashboard' | 'team';
 type RecommendSubTab = 'recent' | 'unresolved';
@@ -51,6 +52,7 @@ const Main = () => {
   const [recentViewFilter, setRecentViewFilter] = useState<'my' | 'all'>('all');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [recentWorks, setRecentWorks] = useState<any[]>([]);
+  const [activities, setActivities] = useState<any[]>([]);
   const [unresolvedIssues, setUnresolvedIssues] = useState<any[]>([]);
   const [menuOpenProjectId, setMenuOpenProjectId] = useState<number | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -62,6 +64,7 @@ const Main = () => {
   const [activePopup, setActivePopup] = useState<'notifications' | 'settings' | 'profile' | null>(null);
   const popupRef = useRef<HTMLDivElement>(null);
   const [popup, setPopup] = useState<{ type: string | null, message?: string }>({ type: null });
+  const [activitiesLoading, setActivitiesLoading] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([
     {
       id: 1,
@@ -104,6 +107,7 @@ const Main = () => {
       icon: 'bell'
     }
   ]);
+  const [activityFilter, setActivityFilter] = useState<'all' | 'my'>('all');
 
   const unreadCount = notifications.filter(notification => !notification.isRead).length;
 
@@ -462,6 +466,62 @@ const Main = () => {
     }
   }, [siteId, recommendSubTab, location.key]);
 
+  // 활동 로그 로드
+  const loadActivities = async () => {
+    if (!siteId) return;
+    
+    try {
+      setActivitiesLoading(true);
+      console.log('활동 내역 로딩 시작:', { siteId });
+      const response = await projectService.getRecentWorks(Number(siteId));
+      console.log('활동 내역 로딩 결과:', response);
+      setActivities(response || []);
+    } catch (error) {
+      console.error('활동 내역 로딩 에러:', error);
+      setActivities([]);
+    } finally {
+      setActivitiesLoading(false);
+    }
+  };
+
+  // 탭 변경 핸들러
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
+    // 최근 탭으로 변경될 때 활동 내역 로드
+    if (tab === 'recent') {
+      loadActivities();
+    }
+  };
+
+  // 활동 내역 필터 변경 시에도 다시 로드
+  useEffect(() => {
+    if (activeTab === 'recent') {
+      loadActivities();
+    }
+  }, [siteId, activityFilter, user?.userId, activeTab]);
+
+  // 활동 클릭 핸들러
+  const handleActivityClick = (activity: RecentWork) => {
+    // 활동 내역의 description을 파싱하여 필요한 정보 추출
+    const description = activity.description.toLowerCase();
+    
+    if (description.includes('댓글')) {
+      // 댓글 관련 활동인 경우 해당 프로젝트의 상세 페이지로 이동
+      setActiveTab('project');
+      const project = projects.find(p => p.name === activity.projectName);
+      if (project) {
+        setSelectedProjectIndex(projects.indexOf(project));
+      }
+    } else {
+      // 그 외의 경우 해당 프로젝트로 이동
+      setActiveTab('project');
+      const project = projects.find(p => p.name === activity.projectName);
+      if (project) {
+        setSelectedProjectIndex(projects.indexOf(project));
+      }
+    }
+  };
+
   // 로딩 중이거나 에러가 있을 때 표시할 컴포넌트
   if (loading) {
     return (
@@ -618,7 +678,7 @@ const Main = () => {
                 <div key={tab.id} className="tab-item-wrapper">
                   <div className={`tab-item-with-plus ${isActive ? 'tab-active' : ''}`}>
                     <button
-                      onClick={() => setActiveTab(tab.id)}
+                      onClick={() => handleTabChange(tab.id)}
                       className={`tab-button ${isActive ? 'tab-button-active' : ''}`}
                     >
                       <img
@@ -642,7 +702,7 @@ const Main = () => {
                         <button
                           key={project.id}
                           onClick={() => {
-                            setActiveTab('project');
+                            handleTabChange('project');
                             setSelectedProjectIndex(index);
                           }}
                           className={`project-sublist-item ${selectedProjectIndex === index ? 'active' : ''}`}
@@ -703,7 +763,7 @@ const Main = () => {
                       <button 
                         className="view-button"
                         onClick={() => {
-                          setActiveTab('project');
+                          handleTabChange('project');
                           const projectIndex = projects.findIndex(p => p.id === project.id);
                           setSelectedProjectIndex(projectIndex);
                         }}
@@ -753,81 +813,16 @@ const Main = () => {
             <div className="recent-tab">
               <div className="recent-header">
                 <h2 className="section-title">최근</h2>
-                <div className="dropdown-container">
-                  <button 
-                    className="dropdown-button"
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  >
-                    {recentViewFilter === 'my' ? '내것만 보기' : '전체'}
-                    <ChevronDown size={16} />
-                  </button>
-                  
-                  {isDropdownOpen && (
-                    <div className="dropdown-menu">
-                      <button
-                        onClick={() => {
-                          setRecentViewFilter('all');
-                          setIsDropdownOpen(false);
-                        }}
-                        className={recentViewFilter === 'all' ? 'active' : ''}
-                      >
-                        전체
-                      </button>
-                      <button
-                        onClick={() => {
-                          setRecentViewFilter('my');
-                          setIsDropdownOpen(false);
-                        }}
-                        className={recentViewFilter === 'my' ? 'active' : ''}
-                      >
-                        내것만 보기
-                      </button>
-                    </div>
-                  )}
-                </div>
               </div>
 
-              {/* 최근 방문 프로젝트 목록 */}
-              <div className="recent-projects">
-                {recentProjects.length === 0 ? (
-                  <div className="empty-recent">
-                    <p>최근 방문한 프로젝트가 없습니다.</p>
-                  </div>
-                ) : (
-                  recentProjects.map(project => (
-                    <div key={project.id} className="project-card">
-                      <div className="card-header">
-                        <div className="card-text">
-                        <h3>프로젝트</h3>
-                        <h4>{project.name}</h4>
-                        </div>
-                        <div className="card-actions">
-                          <button 
-                            className="action-button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // 추후 프로젝트 관리 메뉴 추가
-                            }}
-                          >
-                            <img src="/assets/ellipsis.png" alt="더보기" className="ellipsis-icon" />
-                          </button>
-                        </div>
-                      </div>
-                      <button 
-                        className="view-button"
-                        onClick={() => {
-                          setActiveTab('project');
-                          const projectIndex = projects.findIndex(p => p.id === project.id);
-                          setSelectedProjectIndex(projectIndex);
-                          handleProjectVisit(project);
-                        }}
-                      >
-                        프로젝트 보기
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
+              {activitiesLoading ? (
+                <div className="loading-message">로딩 중...</div>
+              ) : (
+                <ActivityLogView
+                  activities={activities}
+                  onActivityClick={handleActivityClick}
+                />
+              )}
             </div>
           )}
 

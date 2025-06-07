@@ -323,6 +323,15 @@ const boardService = {
       order,
       userId: user.id
     });
+  },
+
+  updateIssueStatus: async (issueId: number, status: string, columnId: number, order: number): Promise<any> => {
+    const response = await axios.patch(`${BASE_URL}/issues/${issueId}/status`, {
+      status,
+      columnId,
+      order
+    });
+    return response.data;
   }
 };
 

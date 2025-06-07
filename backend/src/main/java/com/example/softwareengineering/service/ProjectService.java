@@ -16,6 +16,7 @@ import java.util.HashMap;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ProjectService {
     private final ProjectRepository projectRepository;
     private final SiteRepository siteRepository;
@@ -27,6 +28,8 @@ public class ProjectService {
     private final BoardColumnRepository boardColumnRepository;
     private final RecentProjectVisitRepository recentProjectVisitRepository;
     private final RecentWorkRepository recentWorkRepository;
+    private final ActivityLogRepository activityLogRepository;
+    private final CommentRepository commentRepository;
 
     @Transactional
     public ProjectDTO createProject(Long siteId, String name, String key, boolean isPrivate, Long creatorId, String creatorRole) {
@@ -276,6 +279,7 @@ public class ProjectService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
+        // RecentWork 생성
         RecentWork work = RecentWork.builder()
                 .project(project)
                 .user(user)
@@ -285,6 +289,16 @@ public class ProjectService {
                 .build();
 
         recentWorkRepository.save(work);
+
+        // ActivityLog 생성
+        ActivityLog activityLog = new ActivityLog();
+        activityLog.setUser(user);
+        activityLog.setProject(project);
+        activityLog.setType(ActivityType.PAGE_NAVIGATION);
+        activityLog.setTitle("페이지 이동");
+        activityLog.setTargetPage(pageName);
+
+        activityLogRepository.save(activityLog);
     }
 
     // 이슈 활동 기록
@@ -301,6 +315,7 @@ public class ProjectService {
         Issue issue = issueRepository.findById(issueId)
                 .orElseThrow(() -> new IllegalArgumentException("이슈를 찾을 수 없습니다."));
 
+        // RecentWork 생성
         RecentWork work = RecentWork.builder()
                 .project(project)
                 .user(user)
@@ -312,6 +327,18 @@ public class ProjectService {
                 .build();
 
         recentWorkRepository.save(work);
+
+        // ActivityLog 생성
+        ActivityLog activityLog = new ActivityLog();
+        activityLog.setUser(user);
+        activityLog.setProject(project);
+        activityLog.setType(ActivityType.ISSUE_STATUS_CHANGE);
+        activityLog.setTitle(String.format("[%s] %s", newStatus, issue.getTitle()));
+        activityLog.setContent(String.format("이슈 상태가 '%s'에서 '%s'로 변경되었습니다.", previousStatus, newStatus));
+        activityLog.setIssueId(issueId);
+        activityLog.setStatusChange(String.format("%s -> %s", previousStatus, newStatus));
+
+        activityLogRepository.save(activityLog);
     }
 
     // 댓글 활동 기록
@@ -366,5 +393,110 @@ public class ProjectService {
         }
         
         return unresolvedIssues;
+    }
+
+    // 이슈 수정 활동 기록
+    @Transactional
+    public void recordIssueUpdateActivity(Long projectId, Long userId, Long issueId, String title) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+        
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        Issue issue = issueRepository.findById(issueId)
+                .orElseThrow(() -> new IllegalArgumentException("이슈를 찾을 수 없습니다."));
+
+        // RecentWork 생성
+        RecentWork work = RecentWork.builder()
+                .project(project)
+                .user(user)
+                .issue(issue)
+                .actionType(RecentWork.ActionType.UPDATE)
+                .activityType(RecentWork.ActivityType.ISSUE)
+                .build();
+
+        recentWorkRepository.save(work);
+
+        // ActivityLog 생성
+        ActivityLog activityLog = new ActivityLog();
+        activityLog.setUser(user);
+        activityLog.setProject(project);
+        activityLog.setType(ActivityType.ISSUE_UPDATE);
+        activityLog.setTitle(title);
+        activityLog.setContent("이슈가 수정되었습니다.");
+        activityLog.setIssueId(issueId);
+
+        activityLogRepository.save(activityLog);
+    }
+
+    // 댓글 작성 활동 기록
+    @Transactional
+    public void recordCommentCreateActivity(Long projectId, Long userId, Long commentId, String content) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+        
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."));
+
+        // RecentWork 생성
+        RecentWork work = RecentWork.builder()
+                .project(project)
+                .user(user)
+                .actionType(RecentWork.ActionType.CREATE)
+                .activityType(RecentWork.ActivityType.COMMENT)
+                .content(content)
+                .build();
+
+        recentWorkRepository.save(work);
+
+        // ActivityLog 생성
+        ActivityLog activityLog = new ActivityLog();
+        activityLog.setUser(user);
+        activityLog.setProject(project);
+        activityLog.setType(ActivityType.COMMENT_CREATE);
+        activityLog.setTitle("새 댓글");
+        activityLog.setContent(content);
+        activityLog.setCommentId(commentId);
+
+        activityLogRepository.save(activityLog);
+    }
+
+    // 댓글 수정 활동 기록
+    @Transactional
+    public void recordCommentUpdateActivity(Long projectId, Long userId, Long commentId, String content) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+        
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."));
+
+        // RecentWork 생성
+        RecentWork work = RecentWork.builder()
+                .project(project)
+                .user(user)
+                .actionType(RecentWork.ActionType.UPDATE)
+                .activityType(RecentWork.ActivityType.COMMENT)
+                .content(content)
+                .build();
+
+        recentWorkRepository.save(work);
+
+        // ActivityLog 생성
+        ActivityLog activityLog = new ActivityLog();
+        activityLog.setUser(user);
+        activityLog.setProject(project);
+        activityLog.setType(ActivityType.COMMENT_UPDATE);
+        activityLog.setTitle("댓글 수정");
+        activityLog.setContent(content);
+        activityLog.setCommentId(commentId);
+
+        activityLogRepository.save(activityLog);
     }
 } 

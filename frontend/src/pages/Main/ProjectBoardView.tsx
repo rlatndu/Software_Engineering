@@ -23,6 +23,15 @@ interface ProjectBoardViewProps {
   project: Project;
 }
 
+interface PopupState {
+  type: 'accessDenied' | 'confirmDelete' | 'result' | null;
+  payload?: {
+    message?: string;
+    title?: string;
+    id?: number;
+  };
+}
+
 const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
   const { user } = useAuth();
   const [columns, setColumns] = useState<BoardColumn[]>([]);
@@ -30,10 +39,7 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [popup, setPopup] = useState<{
-    type: 'accessDenied' | 'confirmDelete' | 'result' | null;
-    payload?: any;
-  }>({ type: null });
+  const [popup, setPopup] = useState<PopupState>({ type: null });
 
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -117,7 +123,11 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
         }
         return updated;
       });
-      setPopup({ type: 'result', payload: { message: '수정되었습니다.' } });
+      
+      // 약간의 지연 후 성공 팝업 표시
+      setTimeout(() => {
+        setPopup({ type: 'result', payload: { message: '수정되었습니다.' } });
+      }, 100);
     } catch (err) {
       setPopup({
         type: 'accessDenied',
@@ -128,33 +138,27 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
 
   const handleDelete = (issue: BoardIssue) => {
     setMenuOpenIssue(null);
-    setPopup({ type: 'confirmDelete', payload: issue });
+    setPopup({ 
+      type: 'confirmDelete', 
+      payload: { 
+        title: issue.title,
+        id: issue.id 
+      } 
+    });
   };
 
   const handleConfirmDelete = async () => {
-    if (!popup.payload) return;
-    
-    const issue = popup.payload;
-    setPopup({ type: null });
+    if (!popup.payload?.id) return;
 
     try {
-      await boardService.deleteIssue(issue.id, project.id);
-      setIssuesByColumn(prev => {
-          const updated = { ...prev };
-          for (const colId in updated) {
-          updated[colId] = updated[colId].filter(i => i.id !== issue.id);
-          }
-          return updated;
-        });
-        setPopup({ type: 'result', payload: { message: '삭제되었습니다.' } });
-    } catch (err: any) {
-        setPopup({
-          type: 'accessDenied',
-          payload: {
-            message: err.response?.data?.message || `이슈 삭제에 실패했습니다.`,
-          },
-        });
-      }
+      await boardService.deleteIssue(popup.payload.id, project.id);
+      setPopup({ type: 'result', payload: { message: '이슈가 삭제되었습니다.' } });
+      // 이슈 목록 새로고침
+      loadBoardData();
+    } catch (error) {
+      console.error('이슈 삭제 실패:', error);
+      setPopup({ type: 'result', payload: { message: '이슈 삭제에 실패했습니다.' } });
+    }
   };
 
   const handleColumnEdit = async (column: BoardColumn, newTitle: string) => {
@@ -247,34 +251,12 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
         type: 'accessDenied',
         payload: { message: '이슈를 생성할 권한이 없습니다.' }
       });
-      return;
+      return Promise.reject(new Error('이슈를 생성할 권한이 없습니다. PM 또는 관리자만 이슈를 생성할 수 있습니다.'));
     }
 
     try {
-      // 칼럼 ID에 따른 상태 설정
-      const column = columns.find(col => col.id === columnId);
-      if (!column) {
-        throw new Error('선택된 칼럼을 찾을 수 없습니다.');
-      }
-
-      let status;
-      switch (column.title) {
-        case '할 일':
-          status = 'TODO';
-          break;
-        case '진행 중':
-          status = 'IN_PROGRESS';
-          break;
-        case '완료':
-          status = 'DONE';
-          break;
-        default:
-          status = column.title.toUpperCase();
-      }
-
       const createData = {
         ...issueData,
-        status: status,
         columnId: columnId,
         projectId: project.id,
         reporterId: user?.userId,
@@ -283,22 +265,30 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
       };
 
       console.log('Creating issue with data:', createData);
-
       const newIssue = await boardService.createIssue(project.id, columnId, createData);
-
       console.log('Created new issue:', newIssue);
 
-      setIsCreateModalOpen(false);
-      setPopup({ type: 'result', payload: { message: '이슈가 생성되었습니다.' } });
+      // 상태값에 맞는 칼럼 ID 찾기
+      const targetColumnId = getColumnIdForStatus(issueData.status || 'TODO');
 
-      // 보드 데이터 다시 로드
-      await loadBoardData();
+      // 새로운 이슈를 해당하는 상태의 칼럼에 추가
+      setIssuesByColumn(prev => ({
+        ...prev,
+        [targetColumnId]: [...(prev[targetColumnId] || []), { ...newIssue, columnId: targetColumnId }]
+      }));
+
+      setIsCreateModalOpen(false);
+      // 약간의 지연 후 성공 팝업 표시
+      setTimeout(() => {
+        setPopup({ type: 'result', payload: { message: '이슈가 생성되었습니다.' } });
+      }, 100);
     } catch (err) {
       console.error('이슈 생성 실패:', err);
       setPopup({
         type: 'accessDenied',
         payload: { message: '이슈 생성에 실패했습니다. 서버 오류가 발생했습니다.' }
       });
+      throw err;
     }
   };
 
@@ -397,6 +387,7 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
       const sourceIssues = [...issuesByColumn[sourceColId]];
       const [movedIssue] = sourceIssues.splice(source.index, 1);
 
+      // 로컬 상태 먼저 업데이트
       if (sourceColId === destColId) {
         sourceIssues.splice(destination.index, 0, movedIssue);
         setIssuesByColumn({ ...issuesByColumn, [sourceColId]: sourceIssues });
@@ -410,7 +401,7 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
         });
       }
 
-      // 이슈 이동 API 호출
+      // API 호출
       await boardService.moveIssue(
         movedIssue.id,
         destColId,
@@ -418,7 +409,7 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
       );
     } catch (err) {
       console.error('드래그 앤 드롭 처리 실패:', err);
-      // 에러 발생 시 원래 상태로 복구하기 위해 데이터 다시 로드
+      // 에러 발생 시에만 전체 데이터 다시 로드
       loadBoardData();
     }
   };
@@ -443,18 +434,21 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
 
   const getColumnIdForStatus = (status: string): number => {
     const column = columns.find(col => {
-      switch (col.title) {
+      switch (col.title.toLowerCase()) {
+        case 'to do':
         case '할 일':
           return status === 'TODO';
+        case 'in progress':
         case '진행 중':
           return status === 'IN_PROGRESS';
+        case 'done':
         case '완료':
           return status === 'DONE';
         default:
           return col.title.toUpperCase() === status;
       }
     });
-    return column?.id || columns[0]?.id;
+    return column ? column.id : columns[0].id; // 해당하는 상태의 칼럼이 없으면 첫 번째 칼럼 사용
   };
 
   // 댓글 불러오기 함수
@@ -809,14 +803,30 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
                 assigneeId: updated.assigneeId
               });
               
-              // 이슈 목록 업데이트
+              // 이슈 상태가 변경된 경우 해당하는 칼럼으로 이동
+              const targetColumnId = getColumnIdForStatus(updated.status);
+              
               setIssuesByColumn(prev => {
                 const updatedColumns = { ...prev };
-                for (const colId in updatedColumns) {
-                  updatedColumns[colId] = updatedColumns[colId].map(issue =>
-                    issue.id === updated.id ? { ...issue, ...response } : issue
+                
+                // 모든 칼럼에서 해당 이슈 제거
+                Object.keys(updatedColumns).forEach(colId => {
+                  const columnId = parseInt(colId);
+                  updatedColumns[columnId] = updatedColumns[columnId].filter((issue: BoardIssue) => 
+                    issue.id !== editingIssue.id
                   );
+                });
+                
+                // 새로운 칼럼에 업데이트된 이슈 추가
+                if (!updatedColumns[targetColumnId]) {
+                  updatedColumns[targetColumnId] = [];
                 }
+                updatedColumns[targetColumnId].push({
+                  ...editingIssue,
+                  ...response,
+                  columnId: targetColumnId
+                });
+                
                 return updatedColumns;
               });
 
@@ -834,57 +844,40 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
           }}
         />
       )}
+      {isCreateModalOpen && selectedColumn !== null && (
+        <IssueCreatePopup
+          onClose={() => {
+            setIsCreateModalOpen(false);
+            setSelectedColumn(null);
+          }}
+          onCreate={(newIssue) => handleCreateIssue(selectedColumn, newIssue)}
+          selectedColumn={selectedColumn.toString()}
+          projectId={project.id}
+          projectName={project.name}
+          initialStatus={columns.find(col => col.id === selectedColumn)?.title.toUpperCase() || 'TODO'}
+          setPopup={setPopup}
+        />
+      )}
       {popup.type === 'accessDenied' && (
-  <AccessDeniedPopup
-    message={popup.payload.message}
-    onClose={() => setPopup({ type: null })}
-  />
-)}
-
-{popup.type === 'confirmDelete' && (
-  <ConfirmPopup
-    title="이슈 삭제"
-    message={`[ ${popup.payload.title} ] 이슈를 삭제하시겠습니까?`}
-    onConfirm={handleConfirmDelete}
-    onCancel={() => setPopup({ type: null })}
-  />
-)}
-
-{popup.type === 'result' && (
-  <ResultPopup
-    message={popup.payload.message}
-    onClose={() => setPopup({ type: null })}
-  />
-)}
-
-{isCreateModalOpen && selectedColumn !== null && (
-  <IssueCreatePopup
-    onClose={() => {
-      setIsCreateModalOpen(false);
-      setSelectedColumn(null);
-    }}
-    onCreate={(newIssue) => handleCreateIssue(selectedColumn, newIssue)}
-    selectedColumn={selectedColumn.toString()}
-    projectId={project.id}
-    projectName={project.name}
-    initialStatus={(() => {
-      const column = columns.find(col => col.id === selectedColumn);
-      if (!column) return 'TODO';
-      
-      switch (column.title) {
-        case '할 일':
-          return 'TODO';
-        case '진행 중':
-          return 'IN_PROGRESS';
-        case '완료':
-          return 'DONE';
-        default:
-          return column.title.toUpperCase();
-      }
-    })()}
-  />
-)}
-
+        <AccessDeniedPopup
+          message={popup.payload?.message || ''}
+          onClose={() => setPopup({ type: null })}
+        />
+      )}
+      {popup.type === 'confirmDelete' && (
+        <ConfirmPopup
+          title="이슈 삭제"
+          message={`[ ${popup.payload?.title} ] 이슈를 삭제하시겠습니까?`}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setPopup({ type: null })}
+        />
+      )}
+      {popup.type === 'result' && (
+        <ResultPopup
+          message={popup.payload?.message || ''}
+          onClose={() => setPopup({ type: null })}
+        />
+      )}
     </DragDropContext>
   );
 };

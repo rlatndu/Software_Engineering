@@ -12,7 +12,9 @@
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
+    "@types/antd": "^0.12.32",
     "@types/axios": "^0.9.36",
+    "antd": "^5.25.4",
     "axios": "^1.9.0",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.507.0",
@@ -24,6 +26,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
+    "@types/node": "^22.15.30",
     "@types/react": "^19.0.10",
     "@types/react-beautiful-dnd": "^13.1.8",
     "@types/react-date-range": "^1.4.10",

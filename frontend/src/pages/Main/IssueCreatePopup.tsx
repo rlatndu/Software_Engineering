@@ -9,19 +9,23 @@ import axios from 'axios';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
 import './IssueCreatePopup.css';
+import { activityService } from '../../api/activityService';
+import { ActivityType } from '../../types/activity';
 
 interface IssueCreatePopupProps {
   onClose: () => void;
-  onCreate: (newIssue: any) => void;
+  onCreate: (newIssue: any) => Promise<{ id: number }>;
   selectedColumn: string;
   projectId: number;
   projectName: string;  // 프로젝트 이름 prop 추가
   initialStatus: string;
+  setPopup: (popup: { type: "accessDenied" | "confirmDelete" | "result" | null; payload?: any }) => void;
 }
 
-const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate, selectedColumn, projectId, projectName, initialStatus }) => {
+const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate, selectedColumn, projectId, projectName, initialStatus, setPopup }) => {
   const { user } = useAuth();
   const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([]);
+  const [isCreating, setIsCreating] = useState(false);
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -55,14 +59,22 @@ const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate, 
 
   const handleSubmit = () => {
     if (!form.title.trim()) {
-      alert('제목은 필수입니다.');
+      setPopup({
+        type: 'result',
+        payload: { message: '제목은 필수입니다.' }
+      });
       return;
     }
 
     if (!form.assigneeId) {
-      alert('담당자를 선택해주세요.');
+      setPopup({
+        type: 'result',
+        payload: { message: '담당자를 선택해주세요.' }
+      });
       return;
     }
+
+    setIsCreating(true);
 
     // 시작 시간과 종료 시간 설정
     const startDate = new Date(range.startDate);
@@ -97,11 +109,39 @@ const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate, 
       columnId: parseInt(selectedColumn),
       assigneeId: form.assigneeId,
       reporterId: user?.userId,
-      order: 0  // orderIndex를 order로 변경
+      order: 0
     };
 
     console.log('Submitting new issue:', newIssue);
-    onCreate(newIssue);
+    onCreate(newIssue)
+      .then(async (createdIssue) => {
+        // 활동 내역 생성
+        try {
+          if (user?.userId) {  // userId가 있을 때만 활동 내역 생성
+            await activityService.createActivityLog({
+              userId: Number(user.userId),  // string을 number로 변환
+              type: 'ISSUE_CREATE' as ActivityType,
+              title: form.title.trim(),
+              content: form.description.trim(),
+              projectId: projectId,
+              issueId: createdIssue?.id  // optional chaining 사용
+            });
+          }
+        } catch (error) {
+          console.error('활동 내역 생성 실패:', error);
+        }
+        
+        setIsCreating(false);
+        onClose();
+      })
+      .catch(error => {
+        console.error('이슈 생성 실패:', error);
+        setIsCreating(false);
+        setPopup({
+          type: 'result',
+          payload: { message: '이슈 생성에 실패했습니다.' }
+        });
+      });
   };
 
   const handleTimeChange = (
@@ -119,24 +159,24 @@ const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate, 
   };
 
   return (
-    <div className="n-popup-overlay">
-      <div className="n-popup-content n-issue-create-popup">
-        <div className="n-popup-header">
+    <div className="popup-overlay">
+      <div className="popup-content issue-create-popup">
+        <div className="popup-header">
           <h2>이슈 만들기</h2>
-          <button className="n-close-button" onClick={onClose}>×</button>
+          <button className="close-button" onClick={onClose}>×</button>
         </div>
 
-        <div className="n-form-group">
+        <div className="form-group">
           <label>프로젝트</label>
           <input
             type="text"
             value={projectName}
             disabled
-            className="n-disabled-input"
+            className="disabled-input"
           />
         </div>
 
-        <div className="n-form-group">
+        <div className="form-group">
           <label>상태 *</label>
           <select
             value={form.status}
@@ -153,7 +193,7 @@ const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate, 
           </select>
         </div>
 
-        <div className="n-form-group">
+        <div className="form-group">
           <label>제목 *</label>
           <input
             type="text"
@@ -163,7 +203,7 @@ const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate, 
           />
         </div>
 
-        <div className="n-form-group">
+        <div className="form-group">
           <label>이슈 설명</label>
           <textarea
             value={form.description}
@@ -172,16 +212,16 @@ const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate, 
           />
         </div>
 
-        <div className="n-form-group-row n-date-time-row">
-          <div className="n-datetime-inputs-column">
+        <div className="form-group-row date-time-row">
+          <div className="datetime-inputs-column">
             <label>시작 날짜</label>
             <input
-              className="n-date-display-input"
+              className="date-display-input"
               type="text"
               value={`${range.startDate.getFullYear()}년    ${range.startDate.getMonth() + 1}월    ${range.startDate.getDate()}일`}
               readOnly
             />
-            <div className="n-time-inputs">
+            <div className="time-inputs">
               <select value={form.startTime.ampm} onChange={(e) => handleTimeChange('startTime', 'ampm', e.target.value)}>
                 <option value="오전">오전</option>
                 <option value="오후">오후</option>
@@ -202,12 +242,12 @@ const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate, 
 
             <label>종료 날짜</label>
             <input
-              className="n-date-display-input"
+              className="date-display-input"
               type="text"
               value={`${range.endDate.getFullYear()}년    ${range.endDate.getMonth() + 1}월    ${range.endDate.getDate()}일`}
               readOnly
             />
-            <div className="n-time-inputs">
+            <div className="time-inputs">
               <select value={form.endTime.ampm} onChange={(e) => handleTimeChange('endTime', 'ampm', e.target.value)}>
                 <option value="오전">오전</option>
                 <option value="오후">오후</option>
@@ -227,49 +267,52 @@ const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate, 
             </div>
           </div>
 
-          <div className="n-calendar-wrapper">
+          <div className="calendar-wrapper">
             <DateRange
+              editableDateInputs={true}
+              onChange={item => setRange({ ...range, ...item.selection })}
+              moveRangeOnFirstSelection={false}
               ranges={[range]}
-              onChange={(item) => setRange(item.selection)}
-              months={1}
-              direction="horizontal"
               locale={ko}
             />
           </div>
         </div>
 
-        <div className="n-form-group">
+        <div className="form-group">
           <label>담당자 *</label>
           <select
             value={form.assigneeId}
             onChange={(e) => {
               const selectedMember = projectMembers.find(member => member.userId === e.target.value);
-              setForm(prev => ({
-                ...prev,
-                assigneeId: e.target.value
-              }));
+              setForm({
+                ...form,
+                assigneeId: e.target.value,
+                assigneeName: selectedMember ? selectedMember.name : ''
+              });
             }}
           >
-            <option value="">담당자를 선택하세요</option>
+            <option value="">담당자 선택</option>
             {projectMembers.map(member => (
               <option key={member.userId} value={member.userId}>
-                {member.name} [{member.userId}]
+                {member.name}
               </option>
             ))}
           </select>
         </div>
 
-        <div className="n-form-group">
+        <div className="form-group">
           <label>첨부 파일</label>
-          <div className="n-file-drop-area">첨부파일을 마우스로 끌어 놓아보세요.</div>
+          <div className="file-drop-area">첨부파일을 마우스로 끌어 놓아보세요.</div>
         </div>
 
-        <div className="n-popup-footer n-right-align">
-          <div className="n-footer-actions">
-            <div className="n-reporter">보고자: {user?.userId}</div>
-            <div className="n-popup-buttons">
-              <button className="n-cancel-button" onClick={onClose}>취소</button>
-              <button className="n-create-button" onClick={handleSubmit}>만들기</button>
+        <div className="popup-footer right-align">
+          <div className="footer-actions">
+            <div className="reporter">보고자: {user?.userId}</div>
+            <div className="popup-buttons">
+              <button className="cancel-button" onClick={onClose}>취소</button>
+              <button className="create-button" onClick={handleSubmit} disabled={isCreating}>
+                {isCreating ? '생성 중...' : '생성'}
+              </button>
             </div>
           </div>
         </div>

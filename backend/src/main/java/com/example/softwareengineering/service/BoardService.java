@@ -129,7 +129,7 @@ public class BoardService {
                 // To Do 칼럼
                 BoardColumn todoColumn = BoardColumn.builder()
                         .title("To Do")
-                        .icon("todo-icon")
+                        .icon("/assets/todo.png")
                         .project(project)
                         .orderIndex(1)
                         .isActive(true)
@@ -140,7 +140,7 @@ public class BoardService {
                 // In Progress 칼럼
                 BoardColumn inProgressColumn = BoardColumn.builder()
                         .title("In Progress")
-                        .icon("progress-icon")
+                        .icon("/assets/inprogress.png")
                         .project(project)
                         .orderIndex(2)
                         .isActive(true)
@@ -151,7 +151,7 @@ public class BoardService {
                 // Done 칼럼
                 BoardColumn doneColumn = BoardColumn.builder()
                         .title("Done")
-                        .icon("done-icon")
+                        .icon("/assets/done.png")
                         .project(project)
                         .orderIndex(3)
                         .isActive(true)

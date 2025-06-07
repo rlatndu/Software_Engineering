@@ -45,6 +45,7 @@ interface FormState {
 
 const IssueEditPopup: React.FC<IssueEditPopupProps> = ({ issue, onClose, onSave, projectId, projectName }) => {
   const { user } = useAuth();
+  const [isSaving, setIsSaving] = useState(false);
   
   console.log('Issue data received:', issue); // 디버깅용 로그 추가
   
@@ -121,6 +122,8 @@ const IssueEditPopup: React.FC<IssueEditPopupProps> = ({ issue, onClose, onSave,
       return;
     }
 
+    setIsSaving(true);
+
     try {
       const startDate = new Date(range.startDate);
       const endDate = new Date(range.endDate);
@@ -156,10 +159,12 @@ const IssueEditPopup: React.FC<IssueEditPopupProps> = ({ issue, onClose, onSave,
 
       console.log('Updating issue:', updatedIssue);
       const response = await projectService.updateIssue(projectId, issue.id, updatedIssue);
-      onSave(response);
+      await onSave(response);
+      setIsSaving(false);
       onClose();
     } catch (error: any) {
       console.error('이슈 수정 실패:', error);
+      setIsSaving(false);
       alert(error.message || '이슈 수정에 실패했습니다.');
     }
   };
@@ -333,7 +338,9 @@ const IssueEditPopup: React.FC<IssueEditPopupProps> = ({ issue, onClose, onSave,
             <div className="reporter">보고자: {user?.userId}</div>
             <div className="popup-buttons">
               <button className="cancel-button" onClick={onClose}>취소</button>
-              <button className="create-button" onClick={handleSubmit}>저장</button>
+              <button className="create-button" onClick={handleSubmit} disabled={isSaving}>
+                {isSaving ? '저장 중...' : '저장'}
+              </button>
             </div>
           </div>
         </div>
