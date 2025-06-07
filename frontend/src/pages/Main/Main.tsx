@@ -13,6 +13,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { UserRole } from "../../types/role";
 import ResultPopup from "../../components/ResultPopup";
 import siteService, { Site } from "../../api/siteService";
+import ProjectInvite from "../Team/ProjectInvite";
 
 type TabType = 'recommend' | 'recent' | 'project' | 'dashboard' | 'team';
 type RecommendSubTab = 'recent' | 'unresolved';
@@ -54,6 +55,7 @@ const Main = () => {
   const [menuOpenProjectId, setMenuOpenProjectId] = useState<number | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [recommendLoading, setRecommendLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string>("");
@@ -172,11 +174,14 @@ const Main = () => {
     if (!siteId) return;
     
     try {
+      setRecommendLoading(true);
       const response = await projectService.getRecentWorks(Number(siteId));
       setRecentWorks(response);
     } catch (error) {
       console.error('최근 작업 로딩 에러:', error);
       setRecentWorks([]);
+    } finally {
+      setRecommendLoading(false);
     }
   };
 
@@ -185,11 +190,14 @@ const Main = () => {
     if (!siteId) return;
     
     try {
+      setRecommendLoading(true);
       const response = await projectService.getUnresolvedIssues(Number(siteId));
       setUnresolvedIssues(response);
     } catch (error) {
       console.error('미해결 이슈 로딩 에러:', error);
       setUnresolvedIssues([]);
+    } finally {
+      setRecommendLoading(false);
     }
   };
 
@@ -274,10 +282,12 @@ const Main = () => {
       // 기본 데이터 로드 (로그인 여부와 관계없이)
       try {
         await fetchProjects();
+        setLoading(false); // 초기 로딩 완료
       } catch (error) {
         console.error('프로젝트 로드 에러:', error);
         setError('프로젝트 목록을 불러올 수 없습니다.');
-        return; // 에러 발생 시 추가 로드 중단
+        setLoading(false); // 에러가 발생해도 로딩 상태 해제
+        return;
       }
 
       // 로그인한 경우에만 추가 데이터 로드
@@ -295,14 +305,8 @@ const Main = () => {
           if (role) {
             try {
               await loadRecentProjects();
-              if (recommendSubTab === 'recent') {
-                await loadRecentWorks();
-              } else {
-                await loadUnresolvedIssues();
-              }
             } catch (error) {
               console.error('추가 데이터 로드 에러:', error);
-              // 추가 데이터 로드 실패는 치명적이지 않으므로 에러 상태로 설정하지 않음
             }
           }
         } catch (error: any) {
@@ -317,7 +321,18 @@ const Main = () => {
     };
 
     checkSiteMember();
-  }, [user, siteId, authLoading, recommendSubTab, error, location.key]);
+  }, [user, siteId, authLoading, error, location.key]);
+
+  // 추천 탭 데이터 로드
+  useEffect(() => {
+    if (!loading && !error && siteId) { // 초기 로딩이 완료되고 에러가 없을 때만 실행
+      if (recommendSubTab === 'recent') {
+        loadRecentWorks();
+      } else if (recommendSubTab === 'unresolved') {
+        loadUnresolvedIssues();
+      }
+    }
+  }, [siteId, recommendSubTab, loading, error]);
 
   const handleCreateProject = async () => {
     try {
@@ -718,8 +733,16 @@ const Main = () => {
                   </div>
 
                   <div className="recommend-content">
-                    {recommendSubTab === 'recent' && <RecentWorkView recentWorks={recentWorks} />}
-                    {recommendSubTab === 'unresolved' && <UnresolvedIssueView issues={unresolvedIssues} />}
+                    {recommendLoading ? (
+                      <div className="loading-container">
+                        <p>로딩 중...</p>
+                      </div>
+                    ) : (
+                      <>
+                        {recommendSubTab === 'recent' && <RecentWorkView recentWorks={recentWorks} />}
+                        {recommendSubTab === 'unresolved' && <UnresolvedIssueView issues={unresolvedIssues} />}
+                      </>
+                    )}
                   </div>
                 </>
               )}
@@ -817,7 +840,7 @@ const Main = () => {
           )}
 
           {activeTab === 'dashboard' && <div>dashboard 탭</div>}
-          {activeTab === 'team' && <div>team 탭</div>}
+          {activeTab === 'team' && <ProjectInvite />}
         </main>
       </div>
 
