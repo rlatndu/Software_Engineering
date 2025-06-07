@@ -7301,3 +7301,692 @@ Caused by: java.net.SocketException: Connection reset
         p1_0.site_id=? 
     order by
         rw1_0.created_at desc
+2025-06-07 03:41:26.885 [http-nio-0.0.0.0-8081-exec-10] [DEBUG] org.hibernate.SQL - 
+    select
+        u1_0.id,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.email_verified,
+        u1_0.password,
+        u1_0.profile_image,
+        u1_0.user_id,
+        u1_0.verification_token 
+    from
+        users u1_0 
+    where
+        u1_0.email=? 
+        or u1_0.user_id=?
+2025-06-07 03:41:27.158 [http-nio-0.0.0.0-8081-exec-4] [WARN ] com.zaxxer.hikari.pool.PoolBase - HikariPool-1 - Failed to validate connection com.mysql.cj.jdbc.ConnectionImpl@49c3bda8 (No operations allowed after connection closed.). Possibly consider using a shorter maxLifetime value.
+2025-06-07 03:41:27.375 [http-nio-0.0.0.0-8081-exec-10] [DEBUG] org.hibernate.SQL - 
+    select
+        sm1_0.id,
+        sm1_0.role,
+        sm1_0.site_id,
+        sm1_0.user_id 
+    from
+        site_members sm1_0 
+    where
+        sm1_0.user_id=?
+2025-06-07 03:41:27.569 [http-nio-0.0.0.0-8081-exec-3] [DEBUG] org.hibernate.SQL - 
+    select
+        s1_0.id,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.name,
+        s1_0.owner_id 
+    from
+        sites s1_0 
+    where
+        s1_0.id=?
+2025-06-07 03:41:27.571 [http-nio-0.0.0.0-8081-exec-10] [DEBUG] org.hibernate.SQL - 
+    select
+        u1_0.id,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.email_verified,
+        u1_0.password,
+        u1_0.profile_image,
+        u1_0.user_id,
+        u1_0.verification_token 
+    from
+        users u1_0 
+    where
+        u1_0.user_id=?
+2025-06-07 03:41:27.574 [http-nio-0.0.0.0-8081-exec-8] [DEBUG] org.hibernate.SQL - 
+    select
+        s1_0.id,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.name,
+        s1_0.owner_id 
+    from
+        sites s1_0 
+    where
+        s1_0.id=?
+2025-06-07 03:41:27.772 [http-nio-0.0.0.0-8081-exec-4] [DEBUG] org.hibernate.SQL - 
+    select
+        s1_0.id,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.name,
+        s1_0.owner_id 
+    from
+        sites s1_0 
+    where
+        s1_0.id=?
+2025-06-07 03:41:28.187 [http-nio-0.0.0.0-8081-exec-10] [DEBUG] org.hibernate.SQL - 
+    select
+        distinct s1_0.id,
+        s1_0.created_at,
+        s1_0.description,
+        m1_0.site_id,
+        m1_0.id,
+        m1_0.role,
+        m1_0.user_id,
+        s1_0.name,
+        s1_0.owner_id 
+    from
+        sites s1_0 
+    left join
+        site_members m1_0 
+            on s1_0.id=m1_0.site_id 
+    where
+        s1_0.owner_id=? 
+        or m1_0.user_id=?
+2025-06-07 03:41:28.387 [http-nio-0.0.0.0-8081-exec-8] [DEBUG] org.hibernate.SQL - 
+    select
+        rw1_0.id,
+        rw1_0.action_type,
+        rw1_0.activity_type,
+        rw1_0.content,
+        rw1_0.created_at,
+        rw1_0.expiry_date,
+        rw1_0.issue_id,
+        rw1_0.new_status,
+        rw1_0.page_name,
+        rw1_0.previous_status,
+        rw1_0.project_id,
+        rw1_0.user_id 
+    from
+        recent_works rw1_0 
+    join
+        project p1_0 
+            on p1_0.id=rw1_0.project_id 
+    where
+        p1_0.site_id=? 
+    order by
+        rw1_0.created_at desc
+2025-06-07 03:41:28.388 [http-nio-0.0.0.0-8081-exec-3] [DEBUG] org.hibernate.SQL - 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.created_by,
+        p1_0.is_private,
+        p1_0.project_key,
+        p1_0.name,
+        p1_0.site_id 
+    from
+        project p1_0 
+    where
+        p1_0.site_id=?
+2025-06-07 03:41:28.567 [http-nio-0.0.0.0-8081-exec-4] [DEBUG] org.hibernate.SQL - 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.created_by,
+        p1_0.is_private,
+        p1_0.project_key,
+        p1_0.name,
+        p1_0.site_id 
+    from
+        project p1_0 
+    where
+        p1_0.id in (select
+            distinct rpv1_0.project_id 
+        from
+            recent_project_visits rpv1_0 
+        join
+            project p2_0 
+                on p2_0.id=rpv1_0.project_id 
+        where
+            p2_0.site_id=?) 
+    order by
+        (select
+            max(rpv2_0.visited_at) 
+        from
+            recent_project_visits rpv2_0 
+        where
+            rpv2_0.project_id=p1_0.id) desc
+2025-06-07 03:41:28.803 [http-nio-0.0.0.0-8081-exec-3] [DEBUG] org.hibernate.SQL - 
+    select
+        u1_0.id,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.email_verified,
+        u1_0.password,
+        u1_0.profile_image,
+        u1_0.user_id,
+        u1_0.verification_token 
+    from
+        users u1_0 
+    where
+        u1_0.id=?
+2025-06-07 03:41:29.009 [http-nio-0.0.0.0-8081-exec-2] [DEBUG] org.hibernate.SQL - 
+    select
+        s1_0.id,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.name,
+        s1_0.owner_id 
+    from
+        sites s1_0 
+    where
+        s1_0.id=?
+2025-06-07 03:41:29.161 [http-nio-0.0.0.0-8081-exec-10] [DEBUG] org.hibernate.SQL - 
+    select
+        u1_0.id,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.email_verified,
+        u1_0.password,
+        u1_0.profile_image,
+        u1_0.user_id,
+        u1_0.verification_token 
+    from
+        users u1_0 
+    where
+        u1_0.id=?
+2025-06-07 03:41:29.171 [http-nio-0.0.0.0-8081-exec-5] [DEBUG] org.hibernate.SQL - 
+    select
+        s1_0.id,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.name,
+        s1_0.owner_id 
+    from
+        sites s1_0 
+    where
+        s1_0.id=?
+2025-06-07 03:41:29.922 [http-nio-0.0.0.0-8081-exec-6] [DEBUG] org.hibernate.SQL - 
+    select
+        s1_0.id,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.name,
+        s1_0.owner_id 
+    from
+        sites s1_0 
+    where
+        s1_0.id=?
+2025-06-07 03:41:29.923 [http-nio-0.0.0.0-8081-exec-2] [DEBUG] org.hibernate.SQL - 
+    select
+        rw1_0.id,
+        rw1_0.action_type,
+        rw1_0.activity_type,
+        rw1_0.content,
+        rw1_0.created_at,
+        rw1_0.expiry_date,
+        rw1_0.issue_id,
+        rw1_0.new_status,
+        rw1_0.page_name,
+        rw1_0.previous_status,
+        rw1_0.project_id,
+        rw1_0.user_id 
+    from
+        recent_works rw1_0 
+    join
+        project p1_0 
+            on p1_0.id=rw1_0.project_id 
+    where
+        p1_0.site_id=? 
+    order by
+        rw1_0.created_at desc
+2025-06-07 03:41:30.126 [http-nio-0.0.0.0-8081-exec-10] [DEBUG] org.hibernate.SQL - 
+    select
+        u1_0.id,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.email_verified,
+        u1_0.password,
+        u1_0.profile_image,
+        u1_0.user_id,
+        u1_0.verification_token 
+    from
+        users u1_0 
+    where
+        u1_0.id=?
+2025-06-07 03:41:30.127 [http-nio-0.0.0.0-8081-exec-1] [DEBUG] org.hibernate.SQL - 
+    select
+        s1_0.id,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.name,
+        s1_0.owner_id 
+    from
+        sites s1_0 
+    where
+        s1_0.id=?
+2025-06-07 03:41:30.128 [http-nio-0.0.0.0-8081-exec-5] [DEBUG] org.hibernate.SQL - 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.created_by,
+        p1_0.is_private,
+        p1_0.project_key,
+        p1_0.name,
+        p1_0.site_id 
+    from
+        project p1_0 
+    where
+        p1_0.id in (select
+            distinct rpv1_0.project_id 
+        from
+            recent_project_visits rpv1_0 
+        join
+            project p2_0 
+                on p2_0.id=rpv1_0.project_id 
+        where
+            p2_0.site_id=?) 
+    order by
+        (select
+            max(rpv2_0.visited_at) 
+        from
+            recent_project_visits rpv2_0 
+        where
+            rpv2_0.project_id=p1_0.id) desc
+2025-06-07 03:41:30.649 [http-nio-0.0.0.0-8081-exec-6] [DEBUG] org.hibernate.SQL - 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.created_by,
+        p1_0.is_private,
+        p1_0.project_key,
+        p1_0.name,
+        p1_0.site_id 
+    from
+        project p1_0 
+    where
+        p1_0.site_id=?
+2025-06-07 03:41:30.654 [http-nio-0.0.0.0-8081-exec-9] [DEBUG] org.hibernate.SQL - 
+    select
+        u1_0.id,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.email_verified,
+        u1_0.password,
+        u1_0.profile_image,
+        u1_0.user_id,
+        u1_0.verification_token 
+    from
+        users u1_0 
+    where
+        u1_0.email=? 
+        or u1_0.user_id=?
+2025-06-07 03:41:30.846 [http-nio-0.0.0.0-8081-exec-1] [DEBUG] org.hibernate.SQL - 
+    select
+        u1_0.id,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.email_verified,
+        u1_0.password,
+        u1_0.profile_image,
+        u1_0.user_id,
+        u1_0.verification_token 
+    from
+        users u1_0 
+    where
+        u1_0.user_id=?
+2025-06-07 03:41:31.050 [http-nio-0.0.0.0-8081-exec-1] [DEBUG] org.hibernate.SQL - 
+    select
+        sm1_0.id,
+        sm1_0.role,
+        sm1_0.site_id,
+        sm1_0.user_id 
+    from
+        site_members sm1_0 
+    where
+        sm1_0.site_id=? 
+        and sm1_0.user_id=?
+2025-06-07 03:41:31.051 [http-nio-0.0.0.0-8081-exec-6] [DEBUG] org.hibernate.SQL - 
+    select
+        u1_0.id,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.email_verified,
+        u1_0.password,
+        u1_0.profile_image,
+        u1_0.user_id,
+        u1_0.verification_token 
+    from
+        users u1_0 
+    where
+        u1_0.id=?
+2025-06-07 03:41:31.052 [http-nio-0.0.0.0-8081-exec-9] [DEBUG] org.hibernate.SQL - 
+    select
+        sm1_0.id,
+        sm1_0.role,
+        sm1_0.site_id,
+        sm1_0.user_id 
+    from
+        site_members sm1_0 
+    where
+        sm1_0.user_id=?
+2025-06-07 03:41:31.255 [http-nio-0.0.0.0-8081-exec-9] [DEBUG] org.hibernate.SQL - 
+    select
+        u1_0.id,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.email_verified,
+        u1_0.password,
+        u1_0.profile_image,
+        u1_0.user_id,
+        u1_0.verification_token 
+    from
+        users u1_0 
+    where
+        u1_0.user_id=?
+2025-06-07 03:41:31.869 [http-nio-0.0.0.0-8081-exec-7] [DEBUG] org.hibernate.SQL - 
+    select
+        s1_0.id,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.name,
+        s1_0.owner_id 
+    from
+        sites s1_0 
+    where
+        s1_0.id=?
+2025-06-07 03:41:31.869 [http-nio-0.0.0.0-8081-exec-9] [DEBUG] org.hibernate.SQL - 
+    select
+        distinct s1_0.id,
+        s1_0.created_at,
+        s1_0.description,
+        m1_0.site_id,
+        m1_0.id,
+        m1_0.role,
+        m1_0.user_id,
+        s1_0.name,
+        s1_0.owner_id 
+    from
+        sites s1_0 
+    left join
+        site_members m1_0 
+            on s1_0.id=m1_0.site_id 
+    where
+        s1_0.owner_id=? 
+        or m1_0.user_id=?
+2025-06-07 03:41:32.175 [http-nio-0.0.0.0-8081-exec-8] [DEBUG] org.hibernate.SQL - 
+    select
+        s1_0.id,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.name,
+        s1_0.owner_id 
+    from
+        sites s1_0 
+    where
+        s1_0.id=?
+2025-06-07 03:41:32.738 [http-nio-0.0.0.0-8081-exec-7] [DEBUG] org.hibernate.SQL - 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.created_by,
+        p1_0.is_private,
+        p1_0.project_key,
+        p1_0.name,
+        p1_0.site_id 
+    from
+        project p1_0 
+    where
+        p1_0.id in (select
+            distinct rpv1_0.project_id 
+        from
+            recent_project_visits rpv1_0 
+        join
+            project p2_0 
+                on p2_0.id=rpv1_0.project_id 
+        where
+            p2_0.site_id=?) 
+    order by
+        (select
+            max(rpv2_0.visited_at) 
+        from
+            recent_project_visits rpv2_0 
+        where
+            rpv2_0.project_id=p1_0.id) desc
+2025-06-07 03:41:32.994 [http-nio-0.0.0.0-8081-exec-9] [DEBUG] org.hibernate.SQL - 
+    select
+        u1_0.id,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.email_verified,
+        u1_0.password,
+        u1_0.profile_image,
+        u1_0.user_id,
+        u1_0.verification_token 
+    from
+        users u1_0 
+    where
+        u1_0.id=?
+2025-06-07 03:41:32.994 [http-nio-0.0.0.0-8081-exec-8] [DEBUG] org.hibernate.SQL - 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.created_by,
+        p1_0.is_private,
+        p1_0.project_key,
+        p1_0.name,
+        p1_0.site_id 
+    from
+        project p1_0 
+    where
+        p1_0.site_id=?
+2025-06-07 03:41:33.357 [http-nio-0.0.0.0-8081-exec-8] [DEBUG] org.hibernate.SQL - 
+    select
+        u1_0.id,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.email_verified,
+        u1_0.password,
+        u1_0.profile_image,
+        u1_0.user_id,
+        u1_0.verification_token 
+    from
+        users u1_0 
+    where
+        u1_0.id=?
+2025-06-07 03:41:33.559 [http-nio-0.0.0.0-8081-exec-4] [DEBUG] org.hibernate.SQL - 
+    select
+        s1_0.id,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.name,
+        s1_0.owner_id 
+    from
+        sites s1_0 
+    where
+        s1_0.id=?
+2025-06-07 03:41:33.813 [http-nio-0.0.0.0-8081-exec-9] [DEBUG] org.hibernate.SQL - 
+    select
+        u1_0.id,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.email_verified,
+        u1_0.password,
+        u1_0.profile_image,
+        u1_0.user_id,
+        u1_0.verification_token 
+    from
+        users u1_0 
+    where
+        u1_0.id=?
+2025-06-07 03:41:34.428 [http-nio-0.0.0.0-8081-exec-4] [DEBUG] org.hibernate.SQL - 
+    select
+        rw1_0.id,
+        rw1_0.action_type,
+        rw1_0.activity_type,
+        rw1_0.content,
+        rw1_0.created_at,
+        rw1_0.expiry_date,
+        rw1_0.issue_id,
+        rw1_0.new_status,
+        rw1_0.page_name,
+        rw1_0.previous_status,
+        rw1_0.project_id,
+        rw1_0.user_id 
+    from
+        recent_works rw1_0 
+    join
+        project p1_0 
+            on p1_0.id=rw1_0.project_id 
+    where
+        p1_0.site_id=? 
+    order by
+        rw1_0.created_at desc
+2025-06-07 03:41:34.428 [http-nio-0.0.0.0-8081-exec-3] [DEBUG] org.hibernate.SQL - 
+    select
+        s1_0.id,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.name,
+        s1_0.owner_id 
+    from
+        sites s1_0 
+    where
+        s1_0.id=?
+2025-06-07 03:41:34.579 [http-nio-0.0.0.0-8081-exec-2] [DEBUG] org.hibernate.SQL - 
+    select
+        s1_0.id,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.name,
+        s1_0.owner_id 
+    from
+        sites s1_0 
+    where
+        s1_0.id=?
+2025-06-07 03:41:35.154 [http-nio-0.0.0.0-8081-exec-3] [DEBUG] org.hibernate.SQL - 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.created_by,
+        p1_0.is_private,
+        p1_0.project_key,
+        p1_0.name,
+        p1_0.site_id 
+    from
+        project p1_0 
+    where
+        p1_0.site_id=?
+2025-06-07 03:41:35.357 [http-nio-0.0.0.0-8081-exec-2] [DEBUG] org.hibernate.SQL - 
+    select
+        u1_0.id,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.email_verified,
+        u1_0.password,
+        u1_0.profile_image,
+        u1_0.user_id,
+        u1_0.verification_token 
+    from
+        users u1_0 
+    where
+        u1_0.user_id=?
+2025-06-07 03:41:35.554 [http-nio-0.0.0.0-8081-exec-3] [DEBUG] org.hibernate.SQL - 
+    select
+        u1_0.id,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.email_verified,
+        u1_0.password,
+        u1_0.profile_image,
+        u1_0.user_id,
+        u1_0.verification_token 
+    from
+        users u1_0 
+    where
+        u1_0.id=?
+2025-06-07 03:41:35.555 [http-nio-0.0.0.0-8081-exec-2] [DEBUG] org.hibernate.SQL - 
+    select
+        sm1_0.id,
+        sm1_0.role,
+        sm1_0.site_id,
+        sm1_0.user_id 
+    from
+        site_members sm1_0 
+    where
+        sm1_0.site_id=? 
+        and sm1_0.user_id=?
+2025-06-07 03:41:36.294 [http-nio-0.0.0.0-8081-exec-5] [DEBUG] org.hibernate.SQL - 
+    select
+        s1_0.id,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.name,
+        s1_0.owner_id 
+    from
+        sites s1_0 
+    where
+        s1_0.id=?
+2025-06-07 03:41:37.096 [http-nio-0.0.0.0-8081-exec-5] [DEBUG] org.hibernate.SQL - 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.created_by,
+        p1_0.is_private,
+        p1_0.project_key,
+        p1_0.name,
+        p1_0.site_id 
+    from
+        project p1_0 
+    where
+        p1_0.id in (select
+            distinct rpv1_0.project_id 
+        from
+            recent_project_visits rpv1_0 
+        join
+            project p2_0 
+                on p2_0.id=rpv1_0.project_id 
+        where
+            p2_0.site_id=?) 
+    order by
+        (select
+            max(rpv2_0.visited_at) 
+        from
+            recent_project_visits rpv2_0 
+        where
+            rpv2_0.project_id=p1_0.id) desc
+2025-06-07 03:41:37.908 [http-nio-0.0.0.0-8081-exec-10] [DEBUG] org.hibernate.SQL - 
+    select
+        s1_0.id,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.name,
+        s1_0.owner_id 
+    from
+        sites s1_0 
+    where
+        s1_0.id=?
+2025-06-07 03:41:38.666 [http-nio-0.0.0.0-8081-exec-10] [DEBUG] org.hibernate.SQL - 
+    select
+        rw1_0.id,
+        rw1_0.action_type,
+        rw1_0.activity_type,
+        rw1_0.content,
+        rw1_0.created_at,
+        rw1_0.expiry_date,
+        rw1_0.issue_id,
+        rw1_0.new_status,
+        rw1_0.page_name,
+        rw1_0.previous_status,
+        rw1_0.project_id,
+        rw1_0.user_id 
+    from
+        recent_works rw1_0 
+    join
+        project p1_0 
+            on p1_0.id=rw1_0.project_id 
+    where
+        p1_0.site_id=? 
+    order by
+        rw1_0.created_at desc
