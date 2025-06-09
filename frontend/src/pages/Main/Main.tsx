@@ -13,7 +13,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { UserRole } from "../../types/role";
 import ResultPopup from "../../components/ResultPopup";
 import siteService, { Site } from "../../api/siteService";
-import ProjectInvite from "../Team/ProjectInvite";
+import TeamPage from "../Team/TeamPage";
 
 type TabType = 'recommend' | 'recent' | 'project' | 'dashboard' | 'team';
 type RecommendSubTab = 'recent' | 'unresolved';
@@ -832,15 +832,25 @@ const Main = () => {
           )}
 
           {activeTab === 'project' && (
-            <ProjectTab
-              projects={projects}
-              selectedProjectIndex={selectedProjectIndex}
-              setSelectedProjectIndex={setSelectedProjectIndex}
-            />
+            <>
+              <div className="invite-button-topright">
+                <button 
+                  className="invite-button"
+                  onClick={() => setActiveTab('team')}
+                >
+                  + 팀원 초대
+                </button>
+              </div>
+              <ProjectTab
+                projects={projects}
+                selectedProjectIndex={selectedProjectIndex}
+                setSelectedProjectIndex={setSelectedProjectIndex}
+              />
+            </>
           )}
 
           {activeTab === 'dashboard' && <div>dashboard 탭</div>}
-          {activeTab === 'team' && <ProjectInvite />}
+          {activeTab === 'team' && <TeamPage />}
         </main>
       </div>
 

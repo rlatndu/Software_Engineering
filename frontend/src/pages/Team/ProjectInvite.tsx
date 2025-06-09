@@ -17,15 +17,17 @@ const TeamPage = () => {
             <p className="team-description">프로젝트에 초대할 팀원을 선택하세요.</p>
 
             <div className="invite-section">
-              <label>초대 권한</label>
-              <select disabled>
-                <option>
-                  {isAdmin ? '프로젝트 관리자' : '일반 사용자'}
-                </option>
-              </select>
+              <label>초대 권한 / 이메일 입력</label>
+              <div className="invite-row">
+                <select disabled>
+                  <option>
+                    {isAdmin ? '프로젝트 관리자' : '일반 사용자'}
+                  </option>
+                </select>
 
-              <input type="email" placeholder="이메일 입력" />
-              <button className="invite-button">초대하기</button>
+                <input type="email" placeholder="이메일 입력" />
+                <button className="invite-button">초대하기</button>
+              </div>
             </div>
           </>
         ) : (
