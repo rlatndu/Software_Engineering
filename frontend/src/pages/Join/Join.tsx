@@ -20,6 +20,28 @@ const Join = () => {
   const [emailVerified, setEmailVerified] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  function generateState(length = 16) {
+    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let state = "";
+    for (let i = 0; i < length; i++) {
+      state += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return state;
+  }
+
+  const NAVER_CLIENT_ID = "Tg1tJog9KDRqI3d8QxFk";
+  const REDIRECT_URI = "http://localhost:5173/login/oauth2/code/naver";
+
+  const handleNaverLogin = () => {
+    const state = generateState();
+    const naverLoginUrl =
+        `https://nid.naver.com/oauth2.0/authorize?response_type=code` +
+        `&client_id=${NAVER_CLIENT_ID}` +
+        `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
+        `&state=${state}`;
+    window.location.href = naverLoginUrl;
+  };
+
   // ID 입력 필드 비활성화 상태 관리
   const [idFieldDisabled, setIdFieldDisabled] = useState(true);
   // 비밀번호 입력 필드 비활성화 상태 관리
@@ -333,7 +355,7 @@ const Join = () => {
             <img src="/assets/icon_logo_google.png" alt="Google Logo" className="googlelogo_png" />
             <span>Google</span>
           </button>
-          <button className="login_naver_btn" disabled={isProcessing}>
+          <button className="login_naver_btn" disabled={isProcessing} onClick={handleNaverLogin}>
             <img src="/assets/icon_logo_never.png" alt="Naver Logo" className="naverlogo_png" />
             <span>Naver</span>
           </button>
