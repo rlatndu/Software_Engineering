@@ -74,6 +74,14 @@ const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate, 
       return;
     }
 
+    if (!user?.userId) {
+      setPopup({
+        type: 'result',
+        payload: { message: '로그인이 필요합니다.' }
+      });
+      return;
+    }
+
     setIsCreating(true);
 
     // 시작 시간과 종료 시간 설정
@@ -101,20 +109,28 @@ const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate, 
     }
 
     const newIssue = {
+      projectId: projectId,
       title: form.title.trim(),
       description: form.description.trim(),
       status: form.status,
-      startDate: new Date(startDate.getTime() - startDate.getTimezoneOffset() * 60000).toISOString(),
-      endDate: new Date(endDate.getTime() - endDate.getTimezoneOffset() * 60000).toISOString(),
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
       columnId: parseInt(selectedColumn),
       assigneeId: form.assigneeId,
-      reporterId: user?.userId,
+      reporterId: user.userId,
       order: 0
     };
 
-    console.log('Submitting new issue:', newIssue);
+    console.log('Creating issue with data:', {
+      ...newIssue,
+      projectId: typeof projectId,
+      columnId: typeof newIssue.columnId,
+      selectedColumn: selectedColumn,
+      user: user
+    });
+
     onCreate(newIssue)
-      .then(async (createdIssue) => {
+      .then(async (response) => {
         // 활동 내역 생성
         try {
           if (user?.userId) {  // userId가 있을 때만 활동 내역 생성
@@ -124,7 +140,7 @@ const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate, 
               title: form.title.trim(),
               content: form.description.trim(),
               projectId: projectId,
-              issueId: createdIssue?.id  // optional chaining 사용
+              issueId: response.id  // response에서 직접 id를 가져옴
             });
           }
         } catch (error) {

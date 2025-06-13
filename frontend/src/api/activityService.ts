@@ -1,7 +1,15 @@
 import axios from 'axios';
 import { ActivityLog, ActivityFilter, ActivityType } from '../types/activity';
 
-const API_URL = '/activity-logs';
+// axios 인스턴스 생성
+const instance = axios.create({
+  baseURL: 'http://localhost:8081',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+const API_URL = '/api/activities';
 
 // API 응답 타입 정의
 interface ApiResponse<T> {
@@ -24,11 +32,11 @@ export const activityService = {
     statusChange?: string;
   }) => {
     try {
-      const response = await axios.post<ApiResponse<ActivityLog>>(API_URL, data);
-      if (!response.data.success) {
-        throw new Error(response.data.message);
-      }
-      return response.data.data;
+      const response = await instance.post<ActivityLog>(API_URL, {
+        ...data,
+        type: data.type.toString()  // enum을 문자열로 변환
+      });
+      return response.data;
     } catch (error: any) {
       console.error('활동 내역 생성 실패:', error);
       throw new Error(error.response?.data?.message || '활동 내역 생성에 실패했습니다.');

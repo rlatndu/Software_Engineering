@@ -5,6 +5,7 @@ import com.example.softwareengineering.dto.IssueUpdateRequest;
 import com.example.softwareengineering.dto.IssueResponse;
 import com.example.softwareengineering.dto.AttachmentResponse;
 import com.example.softwareengineering.dto.IssueOrderUpdateRequest;
+import com.example.softwareengineering.dto.ActivityLogRequestDTO;
 import com.example.softwareengineering.entity.*;
 import com.example.softwareengineering.exception.CustomException;
 import com.example.softwareengineering.repository.IssueRepository;
@@ -31,6 +32,7 @@ public class IssueService {
     private final ProjectMemberRepository projectMemberRepository;
     private final SiteMemberRepository siteMemberRepository;
     private final ProjectService projectService;
+    private final ActivityLogService activityLogService;
 
     public IssueService(
             IssueRepository issueRepository,
@@ -39,7 +41,8 @@ public class IssueService {
             BoardColumnRepository columnRepository,
             ProjectMemberRepository projectMemberRepository,
             SiteMemberRepository siteMemberRepository,
-            ProjectService projectService) {
+            ProjectService projectService,
+            ActivityLogService activityLogService) {
         this.issueRepository = issueRepository;
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
@@ -47,11 +50,19 @@ public class IssueService {
         this.projectMemberRepository = projectMemberRepository;
         this.siteMemberRepository = siteMemberRepository;
         this.projectService = projectService;
+        this.activityLogService = activityLogService;
     }
 
     // 이슈 생성 (프로젝트 관리자만)
+    @Transactional
     public IssueResponse createIssue(IssueCreateRequest request) {
         try {
+            System.out.println("Received issue create request: " + request);
+            System.out.println("ProjectId: " + request.getProjectId());
+            System.out.println("ColumnId: " + request.getColumnId());
+            System.out.println("ReporterId: " + request.getReporterId());
+            System.out.println("AssigneeId: " + request.getAssigneeId());
+
             Project project = projectRepository.findById(request.getProjectId())
                 .orElseThrow(() -> new CustomException("프로젝트 없음"));
 
@@ -136,6 +147,17 @@ public class IssueService {
             }
 
             Issue savedIssue = issueRepository.save(issue);
+            
+            // 활동 내역 저장
+            activityLogService.createActivityLog(ActivityLogRequestDTO.builder()
+                .userId(reporterUser.getId())
+                .type(ActivityType.ISSUE_CREATE)
+                .title(savedIssue.getTitle())
+                .projectId(project.getId())
+                .issueId(savedIssue.getId())
+                .targetPage("/projects/" + project.getId() + "/issues/" + savedIssue.getId())
+                .build());
+            
             return toResponse(savedIssue);
         } catch (CustomException e) {
             throw e;
@@ -191,19 +213,33 @@ public class IssueService {
         }
 
         // 상태 변경 전의 상태 저장
-        String previousStatus = issue.getStatus().toString();
+        IssueStatus oldStatus = issue.getStatus();
+        String oldTitle = issue.getTitle();
         
-        // 상태가 변경되었는지 확인
-        if (request.getStatus() != null && !request.getStatus().equals(previousStatus)) {
-            // 상태 변경 시 활동 로그 기록
-            projectService.recordIssueActivity(
-                issue.getProject().getId(),
-                userId,
-                issueId,
-                RecentWork.ActionType.STATUS_CHANGE,
-                previousStatus,
-                request.getStatus()
-            );
+        // 상태가 변경된 경우
+        if (request.getStatus() != null && oldStatus != issue.getStatus()) {
+            activityLogService.createActivityLog(ActivityLogRequestDTO.builder()
+                .userId(userId)
+                .type(ActivityType.ISSUE_STATUS_CHANGE)
+                .title(issue.getTitle())
+                .projectId(issue.getProject().getId())
+                .issueId(issue.getId())
+                .statusChange(oldStatus + " → " + issue.getStatus())
+                .targetPage("/projects/" + issue.getProject().getId() + "/issues/" + issue.getId())
+                .build());
+        }
+        
+        // 제목이 변경된 경우
+        if (request.getTitle() != null && !oldTitle.equals(issue.getTitle())) {
+            activityLogService.createActivityLog(ActivityLogRequestDTO.builder()
+                .userId(userId)
+                .type(ActivityType.ISSUE_UPDATE)
+                .title(issue.getTitle())
+                .content(oldTitle + " → " + issue.getTitle())
+                .projectId(issue.getProject().getId())
+                .issueId(issue.getId())
+                .targetPage("/projects/" + issue.getProject().getId() + "/issues/" + issue.getId())
+                .build());
         }
 
         // 이슈 정보 업데이트

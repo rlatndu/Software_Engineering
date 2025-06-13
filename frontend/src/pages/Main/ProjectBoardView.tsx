@@ -282,6 +282,8 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
       setTimeout(() => {
         setPopup({ type: 'result', payload: { message: '이슈가 생성되었습니다.' } });
       }, 100);
+
+      return { id: newIssue.id }; // 여기서 id를 포함한 객체를 반환
     } catch (err) {
       console.error('이슈 생성 실패:', err);
       setPopup({

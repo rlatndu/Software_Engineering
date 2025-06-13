@@ -2,14 +2,15 @@ package com.example.softwareengineering.service;
 
 import com.example.softwareengineering.dto.CommentRequest;
 import com.example.softwareengineering.dto.CommentResponse;
+import com.example.softwareengineering.dto.ActivityLogRequestDTO;
 import com.example.softwareengineering.entity.Comment;
 import com.example.softwareengineering.entity.Issue;
 import com.example.softwareengineering.entity.User;
+import com.example.softwareengineering.entity.ActivityType;
 import com.example.softwareengineering.exception.CustomException;
 import com.example.softwareengineering.repository.CommentRepository;
 import com.example.softwareengineering.repository.IssueRepository;
 import com.example.softwareengineering.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,14 +19,22 @@ import java.util.stream.Collectors;
 
 @Service
 public class CommentService {
-    @Autowired
-    private CommentRepository commentRepository;
-    
-    @Autowired
-    private IssueRepository issueRepository;
-    
-    @Autowired
-    private UserRepository userRepository;
+    private final CommentRepository commentRepository;
+    private final IssueRepository issueRepository;
+    private final UserRepository userRepository;
+    private final ActivityLogService activityLogService;
+
+    public CommentService(
+        CommentRepository commentRepository,
+        IssueRepository issueRepository,
+        UserRepository userRepository,
+        ActivityLogService activityLogService
+    ) {
+        this.commentRepository = commentRepository;
+        this.issueRepository = issueRepository;
+        this.userRepository = userRepository;
+        this.activityLogService = activityLogService;
+    }
 
     @Transactional(readOnly = true)
     public List<CommentResponse> getCommentsByIssue(Long issueId) {
@@ -52,7 +61,21 @@ public class CommentService {
             .author(author)
             .build();
 
-        return toResponse(commentRepository.save(comment));
+        Comment savedComment = commentRepository.save(comment);
+        
+        // 활동 내역 저장
+        activityLogService.createActivityLog(ActivityLogRequestDTO.builder()
+            .userId(author.getId())
+            .type(ActivityType.COMMENT_CREATE)
+            .title(issue.getTitle())  // 이슈 제목
+            .content(request.getContent())  // 댓글 내용
+            .projectId(issue.getProject().getId())
+            .issueId(issue.getId())
+            .commentId(savedComment.getId())
+            .targetPage("/projects/" + issue.getProject().getId() + "/issues/" + issue.getId())
+            .build());
+
+        return toResponse(savedComment);
     }
 
     @Transactional
@@ -65,8 +88,23 @@ public class CommentService {
             throw new CustomException("댓글을 수정할 권한이 없습니다. 작성자만 수정할 수 있습니다.");
         }
 
+        String oldContent = comment.getContent();
         comment.setContent(request.getContent());
-        return toResponse(commentRepository.save(comment));
+        Comment savedComment = commentRepository.save(comment);
+        
+        // 활동 내역 저장
+        activityLogService.createActivityLog(ActivityLogRequestDTO.builder()
+            .userId(comment.getAuthor().getId())
+            .type(ActivityType.COMMENT_UPDATE)
+            .title(comment.getIssue().getTitle())  // 이슈 제목
+            .content(oldContent + " → " + request.getContent())  // 변경 내용
+            .projectId(comment.getIssue().getProject().getId())
+            .issueId(comment.getIssue().getId())
+            .commentId(comment.getId())
+            .targetPage("/projects/" + comment.getIssue().getProject().getId() + "/issues/" + comment.getIssue().getId())
+            .build());
+
+        return toResponse(savedComment);
     }
 
     @Transactional

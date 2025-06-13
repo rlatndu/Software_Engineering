@@ -1,6 +1,7 @@
 package com.example.softwareengineering.controller;
 
 import com.example.softwareengineering.dto.ActivityDto;
+import com.example.softwareengineering.dto.ActivityCreateRequest;
 import com.example.softwareengineering.entity.User;
 import com.example.softwareengineering.service.ActivityService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,6 +19,12 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "활동 내역 관리", description = "활동 내역 관리 API")
 public class ActivityController {
     private final ActivityService activityService;
+
+    @PostMapping
+    @Operation(summary = "활동 내역 생성")
+    public ResponseEntity<ActivityDto> createActivity(@RequestBody ActivityCreateRequest request) {
+        return ResponseEntity.ok(activityService.createActivity(request));
+    }
 
     @GetMapping
     @Operation(summary = "활동 내역 조회")
