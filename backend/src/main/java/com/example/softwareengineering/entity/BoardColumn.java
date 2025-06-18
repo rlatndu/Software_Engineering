@@ -37,5 +37,6 @@ public class BoardColumn {
     private Integer orderIndex;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean isActive = true;
 } 
