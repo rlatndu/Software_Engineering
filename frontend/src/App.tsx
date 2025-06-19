@@ -4,6 +4,7 @@ import Login from "./pages/Login/Login";
 import Join from "./pages/Join/Join";
 import Main from "./pages/Main/Main";
 import Home from "./pages/Home/Home";
+import NaverCallback from "./pages/Login/NaverCallback";
 import Site from "./pages/Site/Site";
 import Project from "./pages/Create/Project/project";
 import Verify from "./pages/Verify/Verify";
@@ -13,6 +14,7 @@ import SiteCreatePage from './pages/Create/Site/site';
 import ProjectCreatePage from "./pages/Create/Project/project";
 import NotificationPage from "./pages/Notification/NotificationPage";
 import { AuthProvider } from './contexts/AuthContext';
+import ProjectInvitePage from "./pages/Team/ProjectInvite";
 
 function App() {
   return (
@@ -29,9 +31,11 @@ function App() {
           <Route path="/notifications" element={<NotificationPage />} />
           <Route path="/home" element={<Home />} />
           <Route path="/site" element={<Site />} />
+          <Route path="/login/oauth2/code/naver" element={<NaverCallback />} />
           <Route path="/Create/Site" element={<SiteCreatePage />} />
           <Route path="/project" element={<Project />} />
           <Route path="/create/project/:siteId" element={<ProjectCreatePage />}/>
+          <Route path="/invite/:projectId" element={<ProjectInvitePage />} />
         </Routes>
       </Router>
     </AuthProvider>

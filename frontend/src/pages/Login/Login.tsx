@@ -14,6 +14,34 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const NAVER_CLIENT_ID = "Tg1tJog9KDRqI3d8QxFk";
+  const REDIRECT_URI = "http://localhost:5173/login/oauth2/code/naver";
+
+  function generateState(length = 16) {
+    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let state = "";
+    for (let i = 0; i < length; i++) {
+      state += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return state;
+  }
+
+  const getNaverLoginUrl = () => {
+    const state = generateState();
+    const NAVER_CLIENT_ID = "Tg1tJog9KDRqI3d8QxFk";
+    const REDIRECT_URI = "http://localhost:5173/login/oauth2/code/naver";
+    return (
+        `https://nid.naver.com/oauth2.0/authorize?response_type=code` +
+        `&client_id=${NAVER_CLIENT_ID}` +
+        `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
+        `&state=${state}`
+    );
+  };
+
+  const handleNaverLogin = () => {
+    const naverLoginUrl = getNaverLoginUrl();
+    window.location.href = naverLoginUrl;
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -148,7 +176,7 @@ const Login = () => {
             <img src="/assets/icon_logo_google.png" alt="Google Logo" className="googlelogo_png" />
             <span>Google</span>
           </button>
-          <button className="login_naver_btn" disabled={isProcessing}>
+          <button className="login_naver_btn" disabled={isProcessing} onClick={handleNaverLogin}>
             <img src="/assets/icon_logo_never.png" alt="Naver Logo" className="naverlogo_png" />
             <span>Naver</span>
           </button>

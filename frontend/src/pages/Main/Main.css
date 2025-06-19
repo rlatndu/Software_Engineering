@@ -859,3 +859,19 @@ button:focus {
   font-size: 1.1rem;
   color: #666;
 }
+
+.invite-button-topright {
+  display: flex;
+  justify-content: flex-end;
+  padding: 1rem;
+}
+
+.invite-button-topright .invite-button {
+  background-color: #7e9dec;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+}

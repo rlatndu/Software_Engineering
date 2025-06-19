@@ -1,3 +1,4 @@
+/* 전체 페이지 컨테이너 */
 .team-page {
   width: 100vw;
   height: 100vh;
@@ -5,12 +6,15 @@
   justify-content: center;
   align-items: center;
   background-color: #ffffff;
+  padding: 2rem;
+  box-sizing: border-box;
 }
 
+/* 내부 콘텐츠 영역 */
 .team-content-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
   max-width: 600px;
   width: 100%;
   padding: 2rem;
@@ -19,58 +23,103 @@
   background: white;
 }
 
+/* 제목 */
 .team-title {
   font-size: 1.5rem;
   font-weight: bold;
   color: #000;
+  margin-bottom: 0.5rem;
 }
 
+/* 설명 텍스트 */
 .team-description {
   color: #666;
   font-size: 0.875rem;
+  line-height: 1.6;
 }
 
+/* 프로젝트 없음 안내 */
 .no-project-text {
   font-size: 1rem;
   color: #999;
   text-align: center;
 }
 
+/* 초대 영역 */
 .invite-section {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
+/* 라벨 텍스트 */
 .invite-section label {
   font-weight: 600;
+  font-size: 0.875rem;
   color: #7e9dec;
 }
 
-.invite-section select,
-.invite-section input {
-  padding: 0.75rem;
-  border-radius: 1.5rem;
+/* 가로 정렬을 위한 행 컨테이너 */
+.invite-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* 셀렉트박스 */
+.invite-row select {
+  flex: 1;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
   border: 1px solid #ccc;
-  font-size: 0.875rem;
-}
-
-.invite-section select:disabled {
+  border-radius: 4px;
   background-color: #f5f5f5;
-  color: #333;
+  color: #555;
+  cursor: not-allowed;
+  outline: none;
+  box-sizing: border-box;
 }
 
-.invite-button {
-  margin-top: 0.5rem;
-  background-color: #007aff;
-  color: white;
-  padding: 0.75rem;
-  border: none;
-  border-radius: 1.5rem;
+/* 이메일 입력 */
+.invite-row input[type="email"] {
+  flex: 2;
+  padding: 0.625rem 1rem;
   font-size: 0.875rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+  margin: 0;
+}
+
+.invite-row input[type="email"]:focus {
+  border-color: #7e9dec;
+}
+
+/* 초대 버튼 */
+.invite-button {
+  padding: 0.625rem 1.25rem;
+  background-color: #7e9dec;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: white;
   cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  border: none;
+  border-radius: 4px;
+  flex-shrink: 0;
+  height: 100%;
+  white-space: nowrap;
 }
 
 .invite-button:hover {
-  background-color: #0056b3;
+  background-color: #5e84d6;
+}
+
+.invite-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }

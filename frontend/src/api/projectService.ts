@@ -3,12 +3,9 @@ import { ApiResponse } from '../types/api';
 import { UserRole } from '../types/role';
 import type { Project, CreateProjectRequest, ProjectMember as BackendProjectMember } from '../types/project';
 
+
 // UI에서 사용하는 간단한 프로젝트 멤버 정보
-export interface ProjectMember {
-    userId: string;
-    name: string;
-    role: string;
-}
+import { ProjectMember } from '../types/project';
 
 export interface UpdateIssueOrderRequest {
     issueId: number;
