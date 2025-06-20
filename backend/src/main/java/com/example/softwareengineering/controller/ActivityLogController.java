@@ -1,7 +1,7 @@
 package com.example.softwareengineering.controller;
 
 import com.example.softwareengineering.dto.ActivityLogRequestDTO;
-import com.example.softwareengineering.entity.ActivityLog;
+import com.example.softwareengineering.dto.ActivityLogDTO;
 import com.example.softwareengineering.service.ActivityLogService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +19,7 @@ public class ActivityLogController {
     @PostMapping
     public ResponseEntity<Map<String, Object>> createActivityLog(@RequestBody ActivityLogRequestDTO requestDTO) {
         try {
-            ActivityLog activityLog = activityLogService.createActivityLog(requestDTO);
+            ActivityLogDTO activityLog = activityLogService.createActivityLog(requestDTO);
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
@@ -46,7 +46,7 @@ public class ActivityLogController {
             @RequestParam(required = false) Long userId,
             @RequestParam(defaultValue = "30") int limit) {
         try {
-            List<ActivityLog> activities;
+            List<ActivityLogDTO> activities;
             if (userId != null) {
                 // 특정 사용자의 사이트 내 활동
                 activities = activityLogService.getUserActivitiesInSite(userId, siteId, limit);
@@ -74,7 +74,7 @@ public class ActivityLogController {
             @PathVariable Long projectId,
             @RequestParam(defaultValue = "30") int limit) {
         try {
-            List<ActivityLog> activities = activityLogService.getActivityLogs(projectId);
+            List<ActivityLogDTO> activities = activityLogService.getActivityLogs(projectId);
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);

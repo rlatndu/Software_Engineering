@@ -216,32 +216,6 @@ public class IssueService {
         IssueStatus oldStatus = issue.getStatus();
         String oldTitle = issue.getTitle();
         
-        // 상태가 변경된 경우
-        if (request.getStatus() != null && oldStatus != issue.getStatus()) {
-            activityLogService.createActivityLog(ActivityLogRequestDTO.builder()
-                .userId(userId)
-                .type(ActivityType.ISSUE_STATUS_CHANGE)
-                .title(issue.getTitle())
-                .projectId(issue.getProject().getId())
-                .issueId(issue.getId())
-                .statusChange(oldStatus + " → " + issue.getStatus())
-                .targetPage("/projects/" + issue.getProject().getId() + "/issues/" + issue.getId())
-                .build());
-        }
-        
-        // 제목이 변경된 경우
-        if (request.getTitle() != null && !oldTitle.equals(issue.getTitle())) {
-            activityLogService.createActivityLog(ActivityLogRequestDTO.builder()
-                .userId(userId)
-                .type(ActivityType.ISSUE_UPDATE)
-                .title(issue.getTitle())
-                .content(oldTitle + " → " + issue.getTitle())
-                .projectId(issue.getProject().getId())
-                .issueId(issue.getId())
-                .targetPage("/projects/" + issue.getProject().getId() + "/issues/" + issue.getId())
-                .build());
-        }
-
         // 이슈 정보 업데이트
         if (request.getTitle() != null) {
             issue.setTitle(request.getTitle());
@@ -250,7 +224,20 @@ public class IssueService {
             issue.setDescription(request.getDescription());
         }
         if (request.getStatus() != null) {
-            issue.setStatus(IssueStatus.valueOf(request.getStatus()));
+            IssueStatus newStatus = IssueStatus.valueOf(request.getStatus());
+            if (oldStatus != newStatus) {  // 상태가 실제로 변경되었는지 확인
+                issue.setStatus(newStatus);
+                activityLogService.createActivityLog(ActivityLogRequestDTO.builder()
+                    .userId(userId)
+                    .type(ActivityType.ISSUE_STATUS_CHANGE)
+                    .title(issue.getTitle())
+                    .content(issue.getTitle())
+                    .projectId(issue.getProject().getId())
+                    .issueId(issue.getId())
+                    .statusChange(oldStatus + " -> " + newStatus)
+                    .targetPage("/projects/" + issue.getProject().getId() + "/issues/" + issue.getId())
+                    .build());
+            }
         }
         if (request.getStartDate() != null) {
             issue.setStartDate(request.getStartDate());
@@ -262,6 +249,19 @@ public class IssueService {
             issue.setOrderIndex(request.getOrder());
         }
         
+        // 제목이 변경된 경우
+        if (request.getTitle() != null && !oldTitle.equals(issue.getTitle())) {
+            activityLogService.createActivityLog(ActivityLogRequestDTO.builder()
+                .userId(userId)
+                .type(ActivityType.ISSUE_UPDATE)
+                .title(issue.getTitle())
+                .content(oldTitle + " -> " + issue.getTitle())
+                .projectId(issue.getProject().getId())
+                .issueId(issue.getId())
+                .targetPage("/projects/" + issue.getProject().getId() + "/issues/" + issue.getId())
+                .build());
+        }
+
         // 담당자 변경
         if (request.getAssigneeId() != null && !request.getAssigneeId().equals(issue.getAssignee() != null ? issue.getAssignee().getUserId() : null)) {
             User newAssignee = userRepository.findByUserId(request.getAssigneeId())

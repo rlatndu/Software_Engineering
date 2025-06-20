@@ -8,8 +8,17 @@ export type ActivityType =
 
 export interface ActivityLog {
   id: number;
-  description: string;
+  userId: number;
+  type: ActivityType;
+  title: string;
+  content: string;
+  timestamp: string;
+  projectId: number;
   projectName: string;
+  issueId?: number;
+  commentId?: number;
+  targetPage?: string;
+  statusChange?: string;
   updatedAt: string;
 }
 

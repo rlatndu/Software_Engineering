@@ -1,15 +1,5 @@
-import axios from 'axios';
+import axios from './axios';
 import { ActivityLog, ActivityFilter, ActivityType } from '../types/activity';
-
-// axios 인스턴스 생성
-const instance = axios.create({
-  baseURL: 'http://localhost:8081',
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
-
-const API_URL = '/api/activities';
 
 // API 응답 타입 정의
 interface ApiResponse<T> {
@@ -17,6 +7,8 @@ interface ApiResponse<T> {
   data: T;
   message: string;
 }
+
+const API_URL = '/activity-logs';
 
 export const activityService = {
   // 활동 내역 생성
@@ -32,11 +24,11 @@ export const activityService = {
     statusChange?: string;
   }) => {
     try {
-      const response = await instance.post<ActivityLog>(API_URL, {
+      const response = await axios.post<ApiResponse<ActivityLog>>(API_URL, {
         ...data,
         type: data.type.toString()  // enum을 문자열로 변환
       });
-      return response.data;
+      return response.data.data;
     } catch (error: any) {
       console.error('활동 내역 생성 실패:', error);
       throw new Error(error.response?.data?.message || '활동 내역 생성에 실패했습니다.');
@@ -123,9 +115,14 @@ export const activityService = {
 
   // 프로젝트의 최근 활동 조회
   getProjectActivities: async (projectId: number, limit: number = 30) => {
-    const response = await axios.get<ApiResponse<ActivityLog[]>>(`${API_URL}/project/${projectId}/recent`, {
-      params: { limit }
-    });
-    return response.data.data;
+    try {
+      const response = await axios.get<ApiResponse<ActivityLog[]>>(`${API_URL}/project/${projectId}/recent`, {
+        params: { limit }
+      });
+      return response.data.data;
+    } catch (error: any) {
+      console.error('프로젝트 활동 내역 조회 실패:', error);
+      throw new Error(error.response?.data?.message || '프로젝트 활동 내역 조회에 실패했습니다.');
+    }
   }
 }; 

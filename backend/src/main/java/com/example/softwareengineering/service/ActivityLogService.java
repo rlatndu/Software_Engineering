@@ -1,6 +1,7 @@
 package com.example.softwareengineering.service;
 
 import com.example.softwareengineering.dto.ActivityLogRequestDTO;
+import com.example.softwareengineering.dto.ActivityLogDTO;
 import com.example.softwareengineering.entity.ActivityLog;
 import com.example.softwareengineering.entity.Project;
 import com.example.softwareengineering.entity.User;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -25,7 +27,7 @@ public class ActivityLogService {
     private final ProjectRepository projectRepository;
 
     @Transactional
-    public ActivityLog createActivityLog(ActivityLogRequestDTO requestDTO) {
+    public ActivityLogDTO createActivityLog(ActivityLogRequestDTO requestDTO) {
         // User 엔티티 조회
         User user = userRepository.findById(requestDTO.getUserId())
             .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
@@ -48,39 +50,50 @@ public class ActivityLogService {
         activityLog.setTargetPage(requestDTO.getTargetPage());
         activityLog.setStatusChange(requestDTO.getStatusChange());
 
-        return activityLogRepository.save(activityLog);
+        ActivityLog saved = activityLogRepository.save(activityLog);
+        return convertToDTO(saved);
     }
 
-    public List<ActivityLog> getActivityLogs(Long projectId) {
+    public List<ActivityLogDTO> getActivityLogs(Long projectId) {
+        List<ActivityLog> activities;
         if (projectId != null) {
             Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
-            return activityLogRepository.findByProjectOrderByTimestampDesc(project);
+            activities = activityLogRepository.findByProjectOrderByTimestampDesc(project);
+        } else {
+            activities = activityLogRepository.findAll();
         }
-        return activityLogRepository.findAll();
+        return activities.stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
     }
 
-    public List<ActivityLog> getUserActivitiesInSite(Long userId, Long siteId, int limit) {
-        return activityLogRepository.findUserActivitiesInSite(
-            userId, 
-            siteId, 
-            PageRequest.of(0, limit)
-        );
+    public List<ActivityLogDTO> getUserActivitiesInSite(Long userId, Long siteId, int limit) {
+        return activityLogRepository.findUserActivitiesInSite(userId, siteId, PageRequest.of(0, limit))
+            .stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
     }
 
-    public List<ActivityLog> getSiteMembersActivities(Long siteId, int limit) {
-        return activityLogRepository.findSiteMembersActivities(
-            siteId,
-            PageRequest.of(0, limit)
-        );
+    public List<ActivityLogDTO> getSiteMembersActivities(Long siteId, int limit) {
+        return activityLogRepository.findSiteMembersActivities(siteId, PageRequest.of(0, limit))
+            .stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
     }
 
-    public List<ActivityLog> getUserRecentActivities(Long userId, int limit) {
-        return activityLogRepository.findRecentActivitiesByUser(userId, PageRequest.of(0, limit));
+    public List<ActivityLogDTO> getUserRecentActivities(Long userId, int limit) {
+        return activityLogRepository.findRecentActivitiesByUser(userId, PageRequest.of(0, limit))
+            .stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
     }
 
-    public List<ActivityLog> getProjectRecentActivities(Long projectId, int limit) {
-        return activityLogRepository.findRecentActivitiesByProject(projectId, PageRequest.of(0, limit));
+    public List<ActivityLogDTO> getProjectRecentActivities(Long projectId, int limit) {
+        return activityLogRepository.findRecentActivitiesByProject(projectId, PageRequest.of(0, limit))
+            .stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
     }
 
     @Transactional
@@ -88,5 +101,29 @@ public class ActivityLogService {
     public void cleanupOldActivities() {
         LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
         activityLogRepository.deleteByTimestampBefore(thirtyDaysAgo);
+    }
+
+    private ActivityLogDTO convertToDTO(ActivityLog activityLog) {
+        ActivityLogDTO dto = new ActivityLogDTO();
+        dto.setId(activityLog.getId());
+        dto.setUserId(activityLog.getUser().getId());
+        dto.setType(activityLog.getType());
+        dto.setTitle(activityLog.getTitle());
+        dto.setContent(activityLog.getContent());
+        dto.setTimestamp(activityLog.getTimestamp());
+        if (activityLog.getProject() != null) {
+            dto.setProjectId(activityLog.getProject().getId());
+            dto.setProjectName(activityLog.getProject().getName());
+        }
+        dto.setIssueId(activityLog.getIssueId());
+        dto.setCommentId(activityLog.getCommentId());
+        dto.setTargetPage(activityLog.getTargetPage());
+        dto.setStatusChange(activityLog.getStatusChange());
+        
+        if (activityLog.getTimestamp() != null) {
+            dto.setUpdatedAt(activityLog.getTimestamp().toString());
+        }
+        
+        return dto;
     }
 } 

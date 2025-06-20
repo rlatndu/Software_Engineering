@@ -15,6 +15,7 @@ import ResultPopup from "../../components/ResultPopup";
 import siteService, { Site } from "../../api/siteService";
 import TeamPage from "../Team/TeamPage";
 import ActivityLogView from './ActivityLogView';
+import { activityService } from "../../api/activityService";
 
 type TabType = 'recommend' | 'recent' | 'project' | 'dashboard' | 'team';
 type RecommendSubTab = 'recent' | 'unresolved';
@@ -473,7 +474,7 @@ const Main = () => {
     try {
       setActivitiesLoading(true);
       console.log('활동 내역 로딩 시작:', { siteId });
-      const response = await projectService.getRecentWorks(Number(siteId));
+      const response = await activityService.getSiteActivities(Number(siteId), user?.userId ? Number(user.userId) : undefined);
       console.log('활동 내역 로딩 결과:', response);
       setActivities(response || []);
     } catch (error) {
