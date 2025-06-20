@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { ActivityLog, ActivityType } from '../../types/activity';
+import { useAuth } from '../../contexts/AuthContext';
 import './ActivityLogView.css';
 
 interface ActivityLogViewProps {
@@ -10,7 +11,9 @@ interface ActivityLogViewProps {
 }
 
 const ActivityLogView: React.FC<ActivityLogViewProps> = ({ activities = [], onActivityClick }) => {
+  const { user } = useAuth();
   const [selectedType, setSelectedType] = useState<ActivityType | 'ALL'>('ALL');
+  const [showOnlyMine, setShowOnlyMine] = useState(false);
 
   const getDisplayText = (activity: ActivityLog) => {
     if (!activity) return '알 수 없는 활동';
@@ -29,7 +32,7 @@ const ActivityLogView: React.FC<ActivityLogViewProps> = ({ activities = [], onAc
       case 'PAGE_NAVIGATION':
         return `페이지 이동: ${activity.content || ''}`;
       default:
-        return activity.description || '알 수 없는 활동';
+        return activity.title || '알 수 없는 활동';
     }
   };
 
@@ -37,7 +40,6 @@ const ActivityLogView: React.FC<ActivityLogViewProps> = ({ activities = [], onAc
     if (!dateString) return '날짜 없음';
     
     try {
-      // ISO 형식의 문자열을 Date 객체로 파싱
       const date = parseISO(dateString);
       return format(date, 'yyyy/MM/dd HH:mm', { locale: ko });
     } catch (error) {
@@ -46,26 +48,37 @@ const ActivityLogView: React.FC<ActivityLogViewProps> = ({ activities = [], onAc
     }
   };
 
-  const filteredActivities = selectedType === 'ALL' 
-    ? activities 
-    : activities.filter(activity => activity && activity.type === selectedType);
+  const filteredActivities = activities
+    .filter(activity => activity)
+    .filter(activity => !showOnlyMine || (user && activity.userId === user.id))
+    .filter(activity => selectedType === 'ALL' || activity.type === selectedType);
 
   return (
     <div className="activity-log-container">
       <div className="activity-filter">
-        <select 
-          value={selectedType} 
-          onChange={(e) => setSelectedType(e.target.value as ActivityType | 'ALL')}
-          className="filter-select"
-        >
-          <option value="ALL">모든 활동</option>
-          <option value="ISSUE_STATUS_CHANGE">상태 변경</option>
-          <option value="ISSUE_CREATE">이슈 생성</option>
-          <option value="ISSUE_UPDATE">이슈 수정</option>
-          <option value="COMMENT_CREATE">댓글 작성</option>
-          <option value="COMMENT_UPDATE">댓글 수정</option>
-          <option value="PAGE_NAVIGATION">페이지 이동</option>
-        </select>
+        <div className="filter-row">
+          <select 
+            value={selectedType} 
+            onChange={(e) => setSelectedType(e.target.value as ActivityType | 'ALL')}
+            className="filter-select"
+          >
+            <option value="ALL">모든 활동</option>
+            <option value="ISSUE_STATUS_CHANGE">상태 변경</option>
+            <option value="ISSUE_CREATE">이슈 생성</option>
+            <option value="ISSUE_UPDATE">이슈 수정</option>
+            <option value="COMMENT_CREATE">댓글 작성</option>
+            <option value="COMMENT_UPDATE">댓글 수정</option>
+            <option value="PAGE_NAVIGATION">페이지 이동</option>
+          </select>
+          <label className="filter-checkbox">
+            <input
+              type="checkbox"
+              checked={showOnlyMine}
+              onChange={(e) => setShowOnlyMine(e.target.checked)}
+            />
+            내 활동만 보기
+          </label>
+        </div>
       </div>
       {!activities || filteredActivities.length === 0 ? (
         <div className="no-activities">
