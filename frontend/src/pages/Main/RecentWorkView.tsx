@@ -8,6 +8,8 @@ interface RecentWorkViewProps {
   recentWorks: ActivityLog[];
 }
 
+const MAX_RECENT_WORKS = 7; // 최대 5개의 최근 작업만 표시
+
 const RecentWorkView: React.FC<RecentWorkViewProps> = ({ recentWorks }) => {
   const getDisplayText = (activity: ActivityLog) => {
     if (!activity) return '알 수 없는 활동';
@@ -42,6 +44,9 @@ const RecentWorkView: React.FC<RecentWorkViewProps> = ({ recentWorks }) => {
     }
   };
 
+  // 최근 작업 목록을 최대 개수로 제한
+  const limitedRecentWorks = recentWorks.slice(0, MAX_RECENT_WORKS);
+
   return (
     <div className="recent-work-view">
       {recentWorks.length === 0 ? (
@@ -50,14 +55,14 @@ const RecentWorkView: React.FC<RecentWorkViewProps> = ({ recentWorks }) => {
         </div>
       ) : (
         <div className="recent-work-list">
-          {recentWorks.map((activity) => (
+          {limitedRecentWorks.map((activity) => (
             activity && (
               <div key={activity.id} className="work-item">
                 <div className="work-status">{getDisplayText(activity)}</div>
                 <div className="work-info">
                   <div className="work-project">{activity.projectName || '프로젝트 없음'}</div>
                 </div>
-                <div className="work-time">{formatDate(activity.updatedAt)}</div>
+                <div className="work-time">{formatDate(activity.timestamp)}</div>
               </div>
             )
           ))}
