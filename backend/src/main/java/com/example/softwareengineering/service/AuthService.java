@@ -201,18 +201,6 @@ public String sendVerificationEmail(String email) {
 
         user = userRepository.save(user);
 
-        // 기본 사이트에 MEMBER로 추가
-        Site defaultSite = siteRepository.findById(1L)
-                .orElseThrow(() -> new RuntimeException("기본 사이트를 찾을 수 없습니다."));
-
-        SiteMember siteMember = SiteMember.builder()
-                .user(user)
-                .site(defaultSite)
-                .role(MemberRole.MEMBER)
-                .build();
-
-        siteMemberRepository.save(siteMember);
-
         response.put("success", true);
         response.put("message", "회원가입이 완료되었습니다.");
         return response;

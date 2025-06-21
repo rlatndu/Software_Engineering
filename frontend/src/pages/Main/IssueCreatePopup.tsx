@@ -4,20 +4,19 @@ import React, { useState, useEffect } from 'react';
 import { DateRange } from 'react-date-range';
 import { ko } from 'date-fns/locale';
 import { useAuth } from '../../contexts/AuthContext';
-import { projectService, ProjectMember } from '../../api/projectService';
+import { projectService } from '../../api/projectService';
 import axios from 'axios';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
 import './IssueCreatePopup.css';
-import { activityService } from '../../api/activityService';
-import { ActivityType } from '../../types/activity';
+import { ProjectMember } from '../../types/project';
 
 interface IssueCreatePopupProps {
   onClose: () => void;
   onCreate: (newIssue: any) => Promise<{ id: number }>;
   selectedColumn: string;
   projectId: number;
-  projectName: string;  // 프로젝트 이름 prop 추가
+  projectName: string;
   initialStatus: string;
   setPopup: (popup: { type: "accessDenied" | "confirmDelete" | "result" | null; payload?: any }) => void;
 }
@@ -131,22 +130,6 @@ const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate, 
 
     onCreate(newIssue)
       .then(async (response) => {
-        // 활동 내역 생성
-        try {
-          if (user?.userId) {  // userId가 있을 때만 활동 내역 생성
-            await activityService.createActivityLog({
-              userId: Number(user.userId),  // string을 number로 변환
-              type: 'ISSUE_CREATE' as ActivityType,
-              title: form.title.trim(),
-              content: form.description.trim(),
-              projectId: projectId,
-              issueId: response.id  // response에서 직접 id를 가져옴
-            });
-          }
-        } catch (error) {
-          console.error('활동 내역 생성 실패:', error);
-        }
-        
         setIsCreating(false);
         onClose();
       })
@@ -303,14 +286,14 @@ const IssueCreatePopup: React.FC<IssueCreatePopupProps> = ({ onClose, onCreate, 
               setForm({
                 ...form,
                 assigneeId: e.target.value,
-                assigneeName: selectedMember ? selectedMember.name : ''
+                assigneeName: selectedMember ? selectedMember.userId : ''
               });
             }}
           >
             <option value="">담당자 선택</option>
             {projectMembers.map(member => (
               <option key={member.userId} value={member.userId}>
-                {member.name}
+                {member.userId}
               </option>
             ))}
           </select>
