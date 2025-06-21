@@ -172,9 +172,10 @@ public class ProjectController {
         @ApiResponse(responseCode = "404", description = "사이트 없음")
     })
     public ResponseEntity<Map<String, Object>> getRecentWorks(
-            @Parameter(description = "사이트 ID") @PathVariable Long siteId) {
+            @Parameter(description = "사이트 ID") @PathVariable Long siteId,
+            @Parameter(description = "사용자 ID") @RequestParam Long userId) {
         try {
-            List<Map<String, Object>> recentWorks = projectService.getRecentWorks(siteId);
+            List<Map<String, Object>> recentWorks = projectService.getRecentWorks(siteId, userId);
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);

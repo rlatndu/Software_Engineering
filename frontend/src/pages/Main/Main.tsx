@@ -181,8 +181,8 @@ const Main = () => {
     
     try {
       setRecommendLoading(true);
-      const response = await projectService.getRecentWorks(Number(siteId));
-      setRecentWorks(response);
+      const response = await activityService.getSiteActivities(Number(siteId), user?.userId ? Number(user.userId) : undefined);
+      setRecentWorks(response || []);
     } catch (error) {
       console.error('최근 작업 로딩 에러:', error);
       setRecentWorks([]);

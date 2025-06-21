@@ -208,13 +208,13 @@ public class ProjectService {
                 .collect(Collectors.toList());
     }
 
-    public List<Map<String, Object>> getRecentWorks(Long siteId) {
+    public List<Map<String, Object>> getRecentWorks(Long siteId, Long userId) {
         // 1. 사이트 존재 확인
         Site site = siteRepository.findById(siteId)
                 .orElseThrow(() -> new IllegalArgumentException("사이트를 찾을 수 없습니다."));
         
-        // 2. 최근 작업 조회
-        List<RecentWork> recentWorks = recentWorkRepository.findRecentWorksBySiteId(siteId);
+        // 2. 최근 작업 조회 - 현재 로그인한 사용자의 작업만 조회
+        List<RecentWork> recentWorks = recentWorkRepository.findByUserAndSite(userId, siteId);
         
         // 3. 응답 데이터 변환
         return recentWorks.stream()

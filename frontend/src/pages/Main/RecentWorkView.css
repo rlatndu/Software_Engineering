@@ -1,5 +1,7 @@
 .recent-work-view {
   padding: 1rem;
+  max-height: calc(100vh - 250px);
+  overflow-y: auto;
 }
 
 .empty-message {
@@ -24,15 +26,20 @@
   border: 1px solid #e5e7eb;
   border-radius: 0.25rem;
   gap: 1rem;
-  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.work-item:hover {
+  background-color: #f8f9fa;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .work-status {
-  font-size: 0.75rem;
-  padding: 0.25rem 0.5rem;
-  background-color: #f3f4f6;
-  border-radius: 0.25rem;
-  color: #4b5563;
+  font-weight: 500;
+  color: #111827;
+  flex: 1;
 }
 
 .work-info {

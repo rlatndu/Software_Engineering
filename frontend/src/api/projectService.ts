@@ -273,9 +273,9 @@ export const projectService = {
     },
 
     // 최근 작업 조회
-    getRecentWorks: async (siteId: number): Promise<RecentWork[]> => {
+    getRecentWorks: async (siteId: number, userId: number): Promise<RecentWork[]> => {
         try {
-            const response = await axiosInstance.get<ApiResponse<RecentWork[]>>(`/projects/site/${siteId}/recent-works`);
+            const response = await axiosInstance.get<ApiResponse<RecentWork[]>>(`/projects/site/${siteId}/recent-works?userId=${userId}`);
             return response.data.data || [];
         } catch (error) {
             console.error('최근 작업 조회 실패:', error);
