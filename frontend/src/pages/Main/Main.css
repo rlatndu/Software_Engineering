@@ -120,6 +120,8 @@ button:focus {
 .project-sublist {
   margin-left: 1rem;
   margin-top: 0.25rem;
+  display: flex;
+  flex-direction: column;
 }
 
 .project-sublist-item {
@@ -129,6 +131,7 @@ button:focus {
   border: none;
   color: #000;
   cursor: pointer;
+  text-align: left;
 }
 
 .project-sublist-item.active {
