@@ -526,11 +526,16 @@ const Main = () => {
 
   // 활동 클릭 핸들러
   const handleActivityClick = (activity: ActivityLog) => {
-    // 활동 내역의 content를 파싱하여 필요한 정보 추출
-    const content = activity.content.toLowerCase();
-    
-    if (content.includes('댓글')) {
-      // 댓글 관련 활동인 경우 해당 프로젝트의 상세 페이지로 이동
+    // 활동 타입에 따라 처리
+    if (activity.type === 'ISSUE_CREATE' || activity.type === 'ISSUE_UPDATE') {
+      // 이슈 관련 활동인 경우 해당 프로젝트로 이동
+      setActiveTab('project');
+      const project = projects.find(p => p.name === activity.projectName);
+      if (project) {
+        setSelectedProjectIndex(projects.indexOf(project));
+      }
+    } else if (activity.type === 'COMMENT_CREATE' || activity.type === 'COMMENT_UPDATE') {
+      // 댓글 관련 활동인 경우 해당 프로젝트로 이동
       setActiveTab('project');
       const project = projects.find(p => p.name === activity.projectName);
       if (project) {
