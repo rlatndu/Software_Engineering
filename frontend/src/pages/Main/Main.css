@@ -543,13 +543,6 @@ button:focus {
   font-weight: 600;
 }
 
-/* 최근 탭 스타일 */
-.recent-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
-}
 
 /* 최근 프로젝트 목록 */
 .recent-projects {

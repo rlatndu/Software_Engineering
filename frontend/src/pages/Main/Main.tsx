@@ -809,9 +809,7 @@ const Main = () => {
 
           {activeTab === 'recent' && (
             <div className="recent-tab">
-              <div className="recent-header">
-                <h2 className="section-title">최근</h2>
-              </div>
+              <h2 className="section-title">최근</h2>
 
               {activitiesLoading ? (
                 <div className="loading-message">로딩 중...</div>
