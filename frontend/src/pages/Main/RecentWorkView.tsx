@@ -8,7 +8,7 @@ interface RecentWorkViewProps {
   recentWorks: ActivityLog[];
 }
 
-const MAX_RECENT_WORKS = 7; // 최대 5개의 최근 작업만 표시
+const MAX_RECENT_WORKS = 6; // 최대 5개의 최근 작업만 표시
 
 const RecentWorkView: React.FC<RecentWorkViewProps> = ({ recentWorks }) => {
   const getDisplayText = (activity: ActivityLog) => {

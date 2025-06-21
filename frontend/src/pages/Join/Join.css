@@ -164,14 +164,16 @@ input[type="email"] {
   border-radius: 2rem;
   font-size: 0.875rem;
   cursor: pointer;
-  border: 1px solid #ccc;
+  border: none;
   background-color: white;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.google_btn:hover,
-.naver_btn:hover {
-  background-color: #f3f3f3;
+.login_google_btn:hover,
+.login_naver_btn:hover {
+  background-color: #f5f5f5;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
 }
 
 .googlelogo_png,

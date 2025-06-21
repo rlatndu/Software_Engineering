@@ -871,3 +871,7 @@ button:focus {
   font-size: 0.875rem;
   cursor: pointer;
 }
+
+.invite-button-topright .invite-button:hover {
+  background-color: #6b85d8;
+}
