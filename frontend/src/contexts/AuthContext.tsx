@@ -19,6 +19,7 @@ interface AuthContextType {
   loading: boolean;
   isAuthenticated: boolean;
   updateUserRoles: (siteId?: number, projectId?: number) => Promise<void>;
+  updateAllProjectRoles: (siteId: number) => Promise<void>;
   login: (userData: User) => void;
   logout: () => void;
 }
@@ -73,85 +74,128 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // 사용자 권한 정보 업데이트 함수
-  const updateUserRoles = async (siteId?: number, projectId?: number) => {
+  // 사이트의 모든 프로젝트 권한 업데이트 함수
+  const updateAllProjectRoles = async (siteId: number) => {
     if (!user) return;
 
     try {
       // 1. 사이트 권한 업데이트
+      const siteMemberRole = await siteService.getSiteMemberRole(siteId, user.userId);
+      let updatedRoles = { ...user.roles };
+      
+      if (siteMemberRole && siteMemberRole !== updatedRoles.siteRole) {
+        updatedRoles.siteRole = siteMemberRole as UserRole;
+      }
+
+      // 2. 사이트의 모든 프로젝트 목록 가져오기
+      const projects = await projectService.getProjects(siteId);
+      
+      // 3. 각 프로젝트의 멤버 목록을 한 번에 가져오기
+      const projectMembersPromises = projects.map(project => 
+        projectService.getProjectMembers(project.id)
+      );
+      const projectMembersResults = await Promise.all(projectMembersPromises);
+
+      // 4. 프로젝트별 권한 설정
+      const newProjectRoles: { [projectId: number]: UserRole } = {};
+      
+      projects.forEach((project, index) => {
+        const members = projectMembersResults[index];
+        const userProjectRole = members.find(member => member.userId === user.userId)?.role;
+        
+        // 사이트 ADMIN인 경우 프로젝트 ADMIN 권한 부여
+        if (updatedRoles.siteRole === UserRole.ADMIN) {
+          newProjectRoles[project.id] = UserRole.ADMIN;
+        } else if (userProjectRole) {
+          newProjectRoles[project.id] = userProjectRole;
+        }
+      });
+
+      // 5. 권한 업데이트
+      updatedRoles.projectRoles = newProjectRoles;
+      
+      setUser(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          roles: updatedRoles
+        };
+      });
+    } catch (error) {
+      console.error('Failed to update all project roles:', error);
+    }
+  };
+
+  // 개별 프로젝트 권한 업데이트 함수
+  const updateUserRoles = async (siteId?: number, projectId?: number) => {
+    if (!user) return;
+
+    try {
+      let updatedRoles = { ...user.roles };
+      let rolesChanged = false;
+      
+      // 1. 사이트 권한 업데이트
       if (siteId) {
         const siteMemberRole = await siteService.getSiteMemberRole(siteId, user.userId);
-        if (siteMemberRole) {
-          setUser(prev => {
-            if (!prev) return null;
-            return {
-              ...prev,
-              roles: {
-                ...prev.roles,
-                siteRole: siteMemberRole
-              }
-            };
-          });
+        if (siteMemberRole && siteMemberRole !== updatedRoles.siteRole) {
+          updatedRoles.siteRole = siteMemberRole;
+          rolesChanged = true;
         }
       }
 
       // 2. 프로젝트 권한 업데이트
       if (projectId) {
         const projectMembers = await projectService.getProjectMembers(projectId);
-        const userProjectRole = projectMembers.find(member => member.userId === user.userId)?.role;
+        let userProjectRole = projectMembers.find(member => member.userId === user.userId)?.role;
         
-        if (userProjectRole) {
-          setUser(prev => {
-            if (!prev) return null;
-            return {
-              ...prev,
-              roles: {
-                ...prev.roles,
-                projectRoles: {
-                  ...prev.roles.projectRoles,
-                  [projectId]: userProjectRole as UserRole
-                }
-              }
-            };
-          });
+        // 사이트 ADMIN인 경우 프로젝트 ADMIN 권한 부여
+        if (updatedRoles.siteRole === UserRole.ADMIN) {
+          userProjectRole = UserRole.ADMIN;
         }
+        
+        const currentProjectRole = updatedRoles.projectRoles[projectId];
+        if (userProjectRole && userProjectRole !== currentProjectRole) {
+          updatedRoles.projectRoles = {
+            ...updatedRoles.projectRoles,
+            [projectId]: userProjectRole
+          };
+          rolesChanged = true;
+        }
+      }
+
+      // 변경된 경우에만 상태 업데이트
+      if (rolesChanged) {
+        setUser(prev => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            roles: updatedRoles
+          };
+        });
       }
     } catch (error) {
       console.error('Failed to update user roles:', error);
     }
   };
 
-  // 초기 사용자 정보 로드
   useEffect(() => {
     const loadUser = async () => {
       try {
         const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-        console.log('Found token:', token ? 'Yes' : 'No');
-        
+        const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
+
         if (!token) {
-          console.log('No token found, setting loading to false');
-          setLoading(false);
+          console.log('No token found');
+          logout();
           return;
         }
-
-        // 토큰을 먼저 헤더에 설정
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        console.log('Set initial token in axios headers:', axios.defaults.headers.common['Authorization']);
 
         // 토큰 검증
-        const isValidToken = await verifyToken(token);
-        console.log('Token validation result:', isValidToken);
-
-        if (!isValidToken) {
-          console.log('Token is invalid, clearing auth data');
-          logout();
-          setLoading(false);
+        const isValid = await verifyToken(token);
+        if (!isValid) {
+          console.log('Token is invalid');
           return;
         }
-
-        // 토큰이 유효하면 사용자 정보 로드
-        const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
-        console.log('Found stored user:', storedUser ? 'Yes' : 'No');
 
         if (storedUser) {
           try {
@@ -175,7 +219,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (siteIdIndex > 0 && pathSegments[siteIdIndex]) {
               const currentSiteId = parseInt(pathSegments[siteIdIndex]);
               if (!isNaN(currentSiteId)) {
-                await updateUserRoles(currentSiteId);
+                // 사이트의 모든 프로젝트 권한을 한 번에 업데이트
+                await updateAllProjectRoles(currentSiteId);
               }
             }
           } catch (error) {
@@ -203,9 +248,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       (config) => {
         const token = localStorage.getItem('token') || sessionStorage.getItem('token');
         if (token) {
-          if (!config.headers) {
-            config.headers = {};
-          }
+          config.headers = config.headers || {};
           config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
@@ -233,7 +276,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   console.log('Current auth state:', { isAuthenticated, hasUser: !!user, user });
 
   return (
-    <AuthContext.Provider value={{ user, setUser, loading, isAuthenticated, updateUserRoles, login, logout }}>
+    <AuthContext.Provider value={{ user, setUser, loading, isAuthenticated, updateUserRoles, updateAllProjectRoles, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

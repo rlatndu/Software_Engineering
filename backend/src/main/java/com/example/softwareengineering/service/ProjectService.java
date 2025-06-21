@@ -80,8 +80,8 @@ public class ProjectService {
                 projectRole = MemberRole.ADMIN;
             } else if ("PM".equals(creatorRole)) {
                 // PM인 경우 프로젝트 PM 권한 부여
-                if (siteMember.getRole() != MemberRole.PM) {
-                    throw new IllegalArgumentException("프로젝트 PM 권한을 부여할 수 없습니다. 사이트 PM만 PM 권한으로 프로젝트를 생성할 수 있습니다.");
+                if (siteMember.getRole() != MemberRole.PM && siteMember.getRole() != MemberRole.ADMIN) {
+                    throw new IllegalArgumentException("프로젝트 PM 권한을 부여할 수 없습니다. 사이트 PM 또는 ADMIN만 PM 권한으로 프로젝트를 생성할 수 있습니다.");
                 }
                 projectRole = MemberRole.PM;
             } else {

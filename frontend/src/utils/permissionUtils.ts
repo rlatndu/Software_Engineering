@@ -1,19 +1,5 @@
-import { UserRole, UserPermissions, getRolePermissions, UserRoles } from '../types/role';
-
-interface User {
-  id: number;
-  userId: string;
-  email: string;
-  roles: UserRoles;
-}
-
-interface Project {
-  id: number;
-  siteId: number;
-  createdBy: {
-    id: number;
-  };
-}
+import { UserRole, UserPermissions, getRolePermissions, UserRoles, User } from '../types/role';
+import { Project } from '../types/project';
 
 export const checkPermission = (
   user: User | null,
@@ -68,9 +54,9 @@ export const canManageProject = (user: User | null, project: Project): boolean =
     return true;
   }
   
-  // 3. 프로젝트별 역할이 PM인 경우 관리 가능
+  // 3. 프로젝트별 역할이 PM 또는 ADMIN인 경우 관리 가능
   const projectRole = user.roles.projectRoles[project.id];
-  if (projectRole === UserRole.PM) {
+  if (projectRole === UserRole.PM || projectRole === UserRole.ADMIN) {
     return true;
   }
 
@@ -84,6 +70,36 @@ export const canManageProject = (user: User | null, project: Project): boolean =
 
 export const canManageIssues = (user: User | null, project: Project): boolean => {
   return checkPermission(user, 'canManageIssues', project);
+};
+
+export const canMoveIssueWithinColumn = (user: User | null, project: Project): boolean => {
+  if (!user) return false;
+  
+  // 프로젝트 멤버인지 확인
+  const projectRole = user.roles.projectRoles[project.id];
+  return projectRole !== undefined;
+};
+
+export const canMoveIssueBetweenColumns = (
+  user: User | null, 
+  project: Project, 
+  issueAssigneeId?: number
+): boolean => {
+  if (!user) return false;
+  
+  // 1. 사이트 ADMIN 권한 체크
+  if (user.roles.siteRole === UserRole.ADMIN) {
+    return true;
+  }
+
+  // 2. 프로젝트 PM 또는 ADMIN 권한 체크
+  const projectRole = user.roles.projectRoles[project.id];
+  if (projectRole === UserRole.PM || projectRole === UserRole.ADMIN) {
+    return true;
+  }
+
+  // 3. 이슈 담당자 체크
+  return issueAssigneeId !== undefined && user.id === issueAssigneeId;
 };
 
 export const canCreateIssue = (user: User | null, project: Project): boolean => {

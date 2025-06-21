@@ -14,6 +14,7 @@ import com.example.softwareengineering.repository.UserRepository;
 import com.example.softwareengineering.repository.BoardColumnRepository;
 import com.example.softwareengineering.repository.ProjectMemberRepository;
 import com.example.softwareengineering.repository.SiteMemberRepository;
+import com.example.softwareengineering.repository.UserIssueOrderRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +34,7 @@ public class IssueService {
     private final SiteMemberRepository siteMemberRepository;
     private final ProjectService projectService;
     private final ActivityLogService activityLogService;
+    private final UserIssueOrderRepository userIssueOrderRepository;
 
     public IssueService(
             IssueRepository issueRepository,
@@ -42,7 +44,8 @@ public class IssueService {
             ProjectMemberRepository projectMemberRepository,
             SiteMemberRepository siteMemberRepository,
             ProjectService projectService,
-            ActivityLogService activityLogService) {
+            ActivityLogService activityLogService,
+            UserIssueOrderRepository userIssueOrderRepository) {
         this.issueRepository = issueRepository;
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
@@ -51,6 +54,7 @@ public class IssueService {
         this.siteMemberRepository = siteMemberRepository;
         this.projectService = projectService;
         this.activityLogService = activityLogService;
+        this.userIssueOrderRepository = userIssueOrderRepository;
     }
 
     // 이슈 생성 (프로젝트 관리자만)
@@ -321,13 +325,122 @@ public class IssueService {
     }
 
     // 이슈 우선순위 일괄 변경
+    @Transactional
     public void updateIssueOrders(List<IssueOrderUpdateRequest> orderList, Long userId) {
+        if (orderList == null || orderList.isEmpty()) {
+            throw new CustomException("업데이트할 이슈 목록이 비어있습니다.");
+        }
+
+        // 첫 번째 이슈로 프로젝트 정보 가져오기
+        Issue firstIssue = issueRepository.findById(orderList.get(0).getIssueId())
+            .orElseThrow(() -> new CustomException("이슈를 찾을 수 없습니다."));
+        Project project = firstIssue.getProject();
+
+        // 사용자 찾기
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new CustomException("사용자를 찾을 수 없습니다."));
+
+        // 프로젝트 멤버인지 확인
+        ProjectMember projectMember = projectMemberRepository.findByProjectAndUser(project, user)
+            .orElseThrow(() -> new CustomException("프로젝트 멤버가 아닙니다."));
+
+        // 모든 이슈가 같은 칼럼에 속하는지 확인
+        BoardColumn firstColumn = firstIssue.getColumn();
+        boolean isSameColumn = true;
+        
         for (IssueOrderUpdateRequest req : orderList) {
             Issue issue = issueRepository.findById(req.getIssueId())
                 .orElseThrow(() -> new CustomException("이슈를 찾을 수 없습니다."));
-            // 권한 체크: 프로젝트 멤버만 가능(추후 보완)
+            
+            // 같은 프로젝트 체크
+            if (!issue.getProject().getId().equals(project.getId())) {
+                throw new CustomException("서로 다른 프로젝트의 이슈는 함께 순서를 변경할 수 없습니다.");
+            }
+
+            // 같은 칼럼인지 체크
+            if (!issue.getColumn().getId().equals(firstColumn.getId())) {
+                isSameColumn = false;
+            }
+
+            // order_index 값이 음수인 경우 예외 처리
+            if (req.getOrder() < 0) {
+                throw new CustomException("순서 값은 0 이상이어야 합니다.");
+            }
+        }
+
+        // 다른 칼럼으로 이동하는 경우 추가 권한 체크
+        if (!isSameColumn) {
+            boolean hasPermission = false;
+
+            // 1. 사이트 ADMIN 권한 체크
+            SiteMember siteMember = siteMemberRepository.findBySiteAndUser(project.getSite(), user)
+                .orElseThrow(() -> new CustomException("사이트 멤버가 아닙니다."));
+            if (siteMember.getRole() == MemberRole.ADMIN) {
+                hasPermission = true;
+            }
+
+            // 2. 프로젝트 PM 또는 ADMIN 권한 체크
+            if (!hasPermission && (projectMember.getRole() == MemberRole.PM || projectMember.getRole() == MemberRole.ADMIN)) {
+                hasPermission = true;
+            }
+
+            // 3. 이슈 담당자 체크
+            if (!hasPermission) {
+                for (IssueOrderUpdateRequest req : orderList) {
+                    Issue issue = issueRepository.findById(req.getIssueId())
+                        .orElseThrow(() -> new CustomException("이슈를 찾을 수 없습니다."));
+                    if (issue.getAssignee() != null && issue.getAssignee().getId().equals(userId)) {
+                        hasPermission = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!hasPermission) {
+                throw new CustomException("이슈를 다른 칼럼으로 이동할 권한이 없습니다.");
+            }
+        }
+
+        // 이슈 순서 업데이트
+        for (IssueOrderUpdateRequest req : orderList) {
+            Issue issue = issueRepository.findById(req.getIssueId())
+                .orElseThrow(() -> new CustomException("이슈를 찾을 수 없습니다."));
+            
+            // 전역 순서 업데이트
             issue.setOrderIndex(req.getOrder());
             issueRepository.save(issue);
+
+            // 사용자별 순서 업데이트
+            UserIssueOrder userOrder = userIssueOrderRepository.findByUserAndIssueAndColumn(user, issue, issue.getColumn())
+                .orElse(UserIssueOrder.builder()
+                    .user(user)
+                    .issue(issue)
+                    .column(issue.getColumn())
+                    .build());
+            
+            userOrder.setOrderIndex(req.getOrder());
+            userIssueOrderRepository.save(userOrder);
+        }
+    }
+
+    // 이슈 목록 조회 시 사용자별 순서 적용
+    public List<Issue> getIssuesByColumn(Long columnId, Long userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new CustomException("사용자를 찾을 수 없습니다."));
+        BoardColumn column = columnRepository.findById(columnId)
+            .orElseThrow(() -> new CustomException("칼럼을 찾을 수 없습니다."));
+
+        // 사용자별 순서 정보 조회
+        List<UserIssueOrder> userOrders = userIssueOrderRepository.findByUserAndColumnOrderByOrderIndexAsc(user, column);
+        
+        if (!userOrders.isEmpty()) {
+            // 사용자별 순서가 있는 경우 해당 순서 사용
+            return userOrders.stream()
+                .map(UserIssueOrder::getIssue)
+                .collect(Collectors.toList());
+        } else {
+            // 사용자별 순서가 없는 경우 기본 순서 사용
+            return issueRepository.findByColumnAndIsActiveTrueOrderByOrderIndexAsc(column);
         }
     }
 

@@ -6,7 +6,7 @@ import ConfirmPopup from '../../components/ConfirmPopup';
 import ResultPopup from '../../components/ResultPopup';
 import IssueCreatePopup from './IssueCreatePopup';
 import boardService, { Column as BoardColumn, Issue as BoardIssue, DEFAULT_COLUMNS, COLUMN_CONSTANTS } from '../../api/boardService';
-import { canManageProject, canManageIssues, canCreateIssue } from '../../utils/permissionUtils';
+import { canManageProject, canManageIssues, canCreateIssue, canMoveIssueWithinColumn, canMoveIssueBetweenColumns } from '../../utils/permissionUtils';
 import { useAuth } from '../../contexts/AuthContext';
 import { Project } from '../../types/project';
 import commentService from '../../api/commentService';
@@ -33,13 +33,13 @@ interface PopupState {
 }
 
 const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
-  const { user } = useAuth();
+  const { user, updateUserRoles } = useAuth();
   const [columns, setColumns] = useState<BoardColumn[]>([]);
   const [issuesByColumn, setIssuesByColumn] = useState<{ [columnId: number]: BoardIssue[] }>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const [popup, setPopup] = useState<PopupState>({ type: null });
+  const [permissionChecked, setPermissionChecked] = useState(false);
 
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -59,6 +59,55 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
 
   const columnDropdownRef = useRef<HTMLDivElement>(null);
   const issueDropdownRef = useRef<HTMLDivElement>(null);
+
+  // 권한 캐시 상태 추가
+  const [canMoveWithin, setCanMoveWithin] = useState<boolean>(false);
+  const [canMoveBetween, setCanMoveBetween] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (user && project) {
+      setCanMoveWithin(canMoveIssueWithinColumn(user, project));
+      setCanMoveBetween(canMoveIssueBetweenColumns(user, project));
+    }
+  }, [user, project]);
+
+  // 프로젝트 진입 시 최초 1회만 권한 체크
+  useEffect(() => {
+    const checkProjectPermission = async () => {
+      if (!user || permissionChecked) return;
+      
+      try {
+        setLoading(true);
+        
+        // 사이트 및 프로젝트 권한 업데이트
+        await updateUserRoles(project.siteId, project.id);
+        
+        // 프로젝트 멤버 정보 가져오기
+        const members = await projectService.getProjectMembers(project.id);
+        const userMember = members.find(member => member.userId === user.userId);
+        
+        if (!userMember) {
+          setPopup({
+            type: 'accessDenied',
+            payload: { message: '프로젝트 멤버가 아닙니다.' }
+          });
+          return;
+        }
+
+        setPermissionChecked(true);
+      } catch (error) {
+        console.error('프로젝트 권한 체크 실패:', error);
+        setPopup({
+          type: 'accessDenied',
+          payload: { message: '프로젝트 접근 권한을 확인할 수 없습니다.' }
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkProjectPermission();
+  }, [project.id, project.siteId, user]);
 
   const loadBoardData = async () => {
     try {
@@ -389,15 +438,6 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
     const { source, destination } = result;
     if (!destination) return;
 
-    // 이슈 이동 권한 체크
-    if (!canManageIssues(user, project)) {
-      setPopup({
-        type: 'accessDenied',
-        payload: { message: '이슈를 이동할 권한이 없습니다.' }
-      });
-      return;
-    }
-
     const sourceColId = parseInt(source.droppableId);
     const destColId = parseInt(destination.droppableId);
     
@@ -411,19 +451,36 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
 
       if (sourceColId === destColId) {
         // 같은 칼럼 내 이동
+        if (!canMoveWithin) {
+          setPopup({
+            type: 'accessDenied',
+            payload: { message: '이슈를 이동할 권한이 없습니다. 프로젝트 멤버만 칼럼 내에서 이슈를 이동할 수 있습니다.' }
+          });
+          return;
+        }
+
         sourceIssues.splice(destination.index, 0, movedIssue);
         setIssuesByColumn({ ...issuesByColumn, [sourceColId]: sourceIssues });
 
-        // 전체 순서 업데이트
+        // 전체 순서 업데이트 - 1000 단위로 간격을 두어 중간 삽입 용이하게 함
         const orderUpdates = sourceIssues.map((issue, index) => ({
           issueId: issue.id,
-          newOrder: index
+          order: (index + 1) * 1000
         }));
 
         // 순서 업데이트 API 호출
         await projectService.updateIssueOrders(project.id, orderUpdates, user?.id || 0);
       } else {
         // 다른 칼럼으로 이동
+        const isAssignee = movedIssue.assigneeId ? Number(movedIssue.assigneeId) === user?.id : false;
+        if (!canMoveBetween && !isAssignee) {
+          setPopup({
+            type: 'accessDenied',
+            payload: { message: '이슈를 다른 칼럼으로 이동할 권한이 없습니다. 프로젝트 관리자, 프로젝트 PM, 또는 해당 이슈의 담당자만 가능합니다.' }
+          });
+          return;
+        }
+
         const destIssues = [...(issuesByColumn[destColId] || [])];
         destIssues.splice(destination.index, 0, movedIssue);
         
@@ -439,7 +496,21 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
         const column = columns.find(col => col.id === destColId);
         if (!column) throw new Error('칼럼을 찾을 수 없습니다.');
 
-        // 이슈 정보 업데이트
+        // 출발지와 도착지 칼럼의 순서 모두 업데이트
+        const sourceOrderUpdates = sourceIssues.map((issue, index) => ({
+          issueId: issue.id,
+          order: (index + 1) * 1000
+        }));
+
+        const destOrderUpdates = destIssues.map((issue, index) => ({
+          issueId: issue.id,
+          order: (index + 1) * 1000
+        }));
+
+        // 순서 업데이트 API 호출
+        await projectService.updateIssueOrders(project.id, [...sourceOrderUpdates, ...destOrderUpdates], user?.id || 0);
+
+        // 이슈 정보 업데이트 (상태 변경)
         await projectService.updateIssue(project.id, movedIssue.id, {
           title: movedIssue.title,
           description: movedIssue.description || '',
@@ -448,20 +519,6 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
           endDate: movedIssue.endDate,
           assigneeId: movedIssue.assigneeId || ''
         });
-
-        // 출발지와 도착지 칼럼의 순서 모두 업데이트
-        const sourceOrderUpdates = sourceIssues.map((issue, index) => ({
-          issueId: issue.id,
-          newOrder: index
-        }));
-
-        const destOrderUpdates = destIssues.map((issue, index) => ({
-          issueId: issue.id,
-          newOrder: index
-        }));
-
-        // 순서 업데이트 API 호출
-        await projectService.updateIssueOrders(project.id, [...sourceOrderUpdates, ...destOrderUpdates], user?.id || 0);
       }
     } catch (error) {
       console.error('이슈 이동 중 오류 발생:', error);

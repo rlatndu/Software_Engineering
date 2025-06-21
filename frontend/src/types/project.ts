@@ -14,14 +14,13 @@ export interface Project {
     siteId: number;
     name: string;
     key: string;
-    description?: string;
     isPrivate: boolean;
-    createdAt: string;
-    updatedAt: string;
     createdBy: {
         id: number;
-        name: string;
+        name?: string;
     };
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface RecentProject extends Project {

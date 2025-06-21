@@ -9,22 +9,23 @@ import { ProjectMember } from '../types/project';
 
 export interface UpdateIssueOrderRequest {
     issueId: number;
-    newOrder: number;
+    order: number;
 }
 
 export interface RecentWork {
     id: number;
-    description: string;
+    projectId: number;
     projectName: string;
-    updatedAt: string;
+    lastVisitedAt: string;
 }
 
 export interface UnresolvedIssue {
     id: number;
     title: string;
+    projectId: number;
     projectName: string;
-    priority: string;
-    dueDate: string;
+    status: string;
+    assignee: string;
 }
 
 export interface SiteMemberRoleResponse extends ApiResponse<{ role: UserRole }> {}
@@ -51,6 +52,20 @@ axiosInstance.interceptors.response.use(
 );
 
 export const projectService = {
+    // 사이트의 모든 프로젝트 조회
+    getProjects: async (siteId: number): Promise<Project[]> => {
+        try {
+            const response = await axiosInstance.get<ApiResponse<Project[]>>(`/sites/${siteId}/projects`);
+            if (!response.data.success) {
+                throw new Error(response.data.message || '프로젝트 목록을 불러올 수 없습니다.');
+            }
+            return response.data.data;
+        } catch (error: any) {
+            console.error('프로젝트 목록 조회 에러:', error);
+            throw new Error(error.message || '프로젝트 목록을 불러올 수 없습니다.');
+        }
+    },
+
     // 사이트 멤버 역할 조회
     getSiteMemberRole: async (siteId: number, userId: string): Promise<string | null> => {
         try {
@@ -231,7 +246,12 @@ export const projectService = {
     },
 
     updateIssueOrders: async (projectId: number, orderList: UpdateIssueOrderRequest[], userId: number) => {
-        const response = await axiosInstance.patch(`/projects/${projectId}/issues/order?userId=${userId}`, orderList);
+        const response = await axiosInstance.patch(`/projects/${projectId}/issues/order?userId=${userId}`, 
+            orderList.map(item => ({
+                issueId: item.issueId,
+                order: item.order
+            }))
+        );
         return response.data;
     },
 

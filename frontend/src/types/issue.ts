@@ -52,7 +52,7 @@ export interface BoardIssue extends Issue {
 
 export interface UpdateIssueOrderRequest {
     issueId: number;
-    newOrder: number;
+    order: number;
 }
 
 export interface UnresolvedIssue {

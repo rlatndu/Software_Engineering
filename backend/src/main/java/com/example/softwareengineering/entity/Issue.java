@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import org.hibernate.annotations.Comment;
 
 @Entity
 @Table(name = "issues")
@@ -66,12 +67,17 @@ public class Issue {
     @JoinColumn(name = "column_id", nullable = false)
     private BoardColumn column;
 
-    @Column(nullable = false)
+    @Column(name = "order_index", nullable = false)
+    @Comment("칼럼 간 이동 시 사용되는 전역 순서")
     private Integer orderIndex;
 
     @Column(nullable = false)
     @Builder.Default
     private Boolean isActive = true;
+
+    @OneToMany(mappedBy = "issue", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<UserIssueOrder> userOrders = new ArrayList<>();
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
@@ -104,6 +110,7 @@ public class Issue {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
         if (status == null) status = IssueStatus.TODO;
+        if (orderIndex == null) orderIndex = 0;
     }
 
     @PreUpdate
@@ -111,11 +118,47 @@ public class Issue {
         updatedAt = LocalDateTime.now();
     }
 
+    /**
+     * 전역 순서 (칼럼 간 이동 시 사용)
+     */
     public Integer getOrder() {
         return orderIndex;
     }
 
     public void setOrder(Integer order) {
         this.orderIndex = order;
+    }
+
+    /**
+     * 특정 사용자의 이슈 순서 조회
+     */
+    public Integer getUserOrder(User user) {
+        return userOrders.stream()
+            .filter(uo -> uo.getUser().getId().equals(user.getId()))
+            .findFirst()
+            .map(UserIssueOrder::getOrderIndex)
+            .orElse(this.orderIndex);
+    }
+
+    /**
+     * 특정 사용자의 이슈 순서 설정
+     */
+    public void setUserOrder(User user, Integer order) {
+        UserIssueOrder userOrder = userOrders.stream()
+            .filter(uo -> uo.getUser().getId().equals(user.getId()))
+            .findFirst()
+            .orElse(null);
+
+        if (userOrder == null) {
+            userOrder = UserIssueOrder.builder()
+                .user(user)
+                .issue(this)
+                .column(this.column)
+                .orderIndex(order)
+                .build();
+            userOrders.add(userOrder);
+        } else {
+            userOrder.setOrderIndex(order);
+        }
     }
 } 

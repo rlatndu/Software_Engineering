@@ -4,6 +4,13 @@ export enum UserRole {
   MEMBER = 'MEMBER'          // 일반 사용자
 }
 
+export interface User {
+  id: number;
+  userId: string;
+  email: string;
+  roles: UserRoles;
+}
+
 export interface UserPermissions {
   canManageSystem: boolean;      // 시스템 설정 변경 권한
   canAccessAllProjects: boolean; // 모든 프로젝트 접근 권한
