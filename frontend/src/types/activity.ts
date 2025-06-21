@@ -16,6 +16,7 @@ export interface ActivityLog {
   projectId: number;
   projectName: string;
   issueId?: number;
+  issueName?: string;
   commentId?: number;
   targetPage?: string;
   statusChange?: string;

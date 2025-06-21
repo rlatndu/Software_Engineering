@@ -18,6 +18,13 @@ const ActivityLogView: React.FC<ActivityLogViewProps> = ({ activities = [], onAc
   const getDisplayText = (activity: ActivityLog) => {
     if (!activity) return '알 수 없는 활동';
     
+    const getLocationText = () => {
+      if (activity.projectName && activity.issueName) {
+        return `[${activity.projectName} - ${activity.issueName}]`;
+      }
+      return activity.projectName ? `[${activity.projectName}]` : '';
+    };
+    
     switch (activity.type) {
       case 'ISSUE_STATUS_CHANGE':
         return `이슈 상태 변경: ${activity.statusChange || ''}`;
@@ -26,9 +33,9 @@ const ActivityLogView: React.FC<ActivityLogViewProps> = ({ activities = [], onAc
       case 'ISSUE_UPDATE':
         return `이슈 수정: ${activity.content || ''}`;
       case 'COMMENT_CREATE':
-        return `댓글 작성: ${activity.content || ''}`;
+        return `${getLocationText()} 댓글 작성: ${activity.content || ''}`;
       case 'COMMENT_UPDATE':
-        return `댓글 수정: ${activity.content || ''}`;
+        return `${getLocationText()} 댓글 수정: ${activity.content || ''}`;
       case 'PAGE_NAVIGATION':
         return `페이지 이동: ${activity.content || ''}`;
       default:
@@ -98,7 +105,7 @@ const ActivityLogView: React.FC<ActivityLogViewProps> = ({ activities = [], onAc
                   <div className="activity-footer">
                     <span className="project-name">{activity.projectName || '프로젝트 없음'}</span>
                     <span className="activity-time">
-                      {formatDate(activity.updatedAt)}
+                      {formatDate(activity.timestamp)}
                     </span>
                   </div>
                 </div>

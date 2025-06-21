@@ -12,12 +12,13 @@ public class ActivityLogDTO {
     private ActivityType type;
     private String title;
     private String content;
-    private LocalDateTime timestamp;
+    private String timestamp;
     private Long projectId;
     private String projectName;
     private Long issueId;
+    private String issueName;
     private Long commentId;
     private String targetPage;
     private String statusChange;
     private String updatedAt;
-} 
+}
