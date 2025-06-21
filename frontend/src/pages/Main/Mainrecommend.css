@@ -40,9 +40,11 @@
 
 .project-list {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: row;
   gap: 1rem;
   margin-top: 1rem;
+  overflow-x: auto;
+  padding-bottom: 1rem;
 }
 
 /* 빈 프로젝트 안내 */
@@ -114,13 +116,8 @@
 }
 
 /* 프로젝트 카드 */
-.project-list {
-  display: flex;
-  flex-direction: row;
-}
-
 .project-card {
-  width: 13.75rem;
+  min-width: 13.75rem;
   height: 11.25rem;
   background-color: #f9fafb;
   border: 1px solid #e5e7eb;
@@ -180,4 +177,4 @@
   font-size: 1rem;
   color: #4b5563;
   font-weight: 500;
-} */
+} 

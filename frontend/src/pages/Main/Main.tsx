@@ -220,8 +220,14 @@ const Main = () => {
       // 프로젝트 방문 기록 저장
       await projectService.recordProjectVisit(project.id, storedUser.id);
       
-      // 최근 프로젝트에 추가
-      recentProjectService.addRecentProject(project);
+      // 현재 프로젝트를 최근 프로젝트 목록의 맨 앞으로 이동
+      setRecentProjects(prevProjects => {
+        // 현재 프로젝트를 제외한 나머지 프로젝트들
+        const otherProjects = prevProjects.filter(p => p.id !== project.id);
+        // 현재 프로젝트를 맨 앞에 추가
+        return [project, ...otherProjects].slice(0, 5); // 최대 5개까지만 유지
+      });
+
     } catch (error) {
       console.error('프로젝트 방문 처리 실패:', error);
     }
@@ -331,14 +337,17 @@ const Main = () => {
 
   // 추천 탭 데이터 로드
   useEffect(() => {
-    if (!loading && !error && siteId) { // 초기 로딩이 완료되고 에러가 없을 때만 실행
+    if (!loading && !error && siteId) {
+      if (activeTab === 'recommend') {
+        loadRecentProjects();
+      }
       if (recommendSubTab === 'recent') {
         loadRecentWorks();
       } else if (recommendSubTab === 'unresolved') {
         loadUnresolvedIssues();
       }
     }
-  }, [siteId, recommendSubTab, loading, error]);
+  }, [siteId, recommendSubTab, loading, error, activeTab]);
 
   const handleCreateProject = async () => {
     try {
@@ -487,12 +496,25 @@ const Main = () => {
   };
 
   // 탭 변경 핸들러
-  const handleTabChange = (tab: TabType) => {
+  const handleTabChange = async (tab: TabType) => {
     setActiveTab(tab);
+    if (tab === 'project' && selectedProjectIndex !== null) {
+      const selectedProject = projects[selectedProjectIndex];
+      if (selectedProject) {
+        await handleProjectVisit(selectedProject);
+      }
+    }
     // 최근 탭으로 변경될 때 활동 내역 로드
     if (tab === 'recent') {
       loadActivities();
     }
+  };
+
+  // 프로젝트 선택 핸들러 추가
+  const handleProjectSelect = async (project: Project, index: number) => {
+    setSelectedProjectIndex(index);
+    await handleProjectVisit(project);
+    handleTabChange('project');
   };
 
   // 활동 내역 필터 변경 시에도 다시 로드
@@ -703,10 +725,7 @@ const Main = () => {
                       {!loading && projects.map((project, index) => (
                         <button
                           key={project.id}
-                          onClick={() => {
-                            handleTabChange('project');
-                            setSelectedProjectIndex(index);
-                          }}
+                          onClick={() => handleProjectSelect(project, index)}
                           className={`project-sublist-item ${selectedProjectIndex === index ? 'active' : ''}`}
                         >
                           • [{project.name}]
@@ -730,47 +749,19 @@ const Main = () => {
               {/* 프로젝트 리스트 */}
               {!loading && projects.length > 0 && (
                 <div className="project-list">
-                  {projects.map((project) => (
+                  {recentProjects.slice(0, 5).map((project) => (
                     <div key={project.id} className="project-card">
                       <div className="card-header">
                         <div className="card-text">
                           <h3>프로젝트</h3>
                           <h4>{project.name}</h4>
                         </div>
-                        <div className="card-actions">
-                          <button 
-                            className="action-button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setMenuOpenProjectId(menuOpenProjectId === project.id ? null : project.id);
-                            }}
-                          >
-                            <img src="/assets/ellipsis.png" alt="더보기" className="ellipsis-icon" />
-                          </button>
-                          {menuOpenProjectId === project.id && (
-                            <div className="dropdown-menu">
-                              <button 
-                                className="dropdown-item delete"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteClick(project);
-                                }}
-                              >
-                                삭제
-                              </button>
-                            </div>
-                          )}
-                        </div>
                       </div>
-                      <button 
+                      <button
                         className="view-button"
-                        onClick={() => {
-                          handleTabChange('project');
-                          const projectIndex = projects.findIndex(p => p.id === project.id);
-                          setSelectedProjectIndex(projectIndex);
-                        }}
+                        onClick={() => handleProjectSelect(project, projects.findIndex(p => p.id === project.id))}
                       >
-                        프로젝트 보기
+                        보기
                       </button>
                     </div>
                   ))}

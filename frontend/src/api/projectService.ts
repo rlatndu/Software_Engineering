@@ -308,7 +308,7 @@ export const projectService = {
     // 프로젝트 방문 기록
     recordProjectVisit: async (projectId: number, userId: number): Promise<void> => {
         try {
-            await axiosInstance.post(`/api/projects/${projectId}/visit?userId=${userId}`);
+            await axiosInstance.post(`/projects/${projectId}/visit?userId=${userId}`);
         } catch (error) {
             console.error('프로젝트 방문 기록 실패:', error);
         }
