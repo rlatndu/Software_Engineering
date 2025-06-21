@@ -368,28 +368,29 @@ public class ProjectService {
         recentWorkRepository.deleteExpiredRecords(LocalDateTime.now());
     }
 
-    public List<Map<String, Object>> getUnresolvedIssues(Long siteId) {
+    public List<Map<String, Object>> getUnresolvedIssues(Long siteId, Long userId) {
         // 1. 사이트 존재 확인
         Site site = siteRepository.findById(siteId)
                 .orElseThrow(() -> new IllegalArgumentException("사이트를 찾을 수 없습니다."));
+
+        // 2. 사용자 존재 확인
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
         
-        // 2. 해당 사이트의 모든 프로젝트에서 미해결 이슈 조회
-        List<Project> projects = projectRepository.findBySite(site);
+        // 3. 해당 사이트에서 현재 사용자가 담당자인 미해결 이슈 조회
+        List<Issue> issues = issueRepository.findUnresolvedIssuesBySiteAndAssignee(siteId, userId);
         List<Map<String, Object>> unresolvedIssues = new ArrayList<>();
         
-        for (Project project : projects) {
-            List<Issue> issues = issueRepository.findByProjectAndStatus(project);
-            for (Issue issue : issues) {
-                Map<String, Object> issueMap = new HashMap<>();
-                issueMap.put("id", issue.getId());
-                issueMap.put("title", issue.getTitle());
-                issueMap.put("projectName", project.getName());
-                issueMap.put("status", issue.getStatus().toString());
-                issueMap.put("updatedAt", issue.getUpdatedAt().format(
-                    java.time.format.DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm")
-                ));
-                unresolvedIssues.add(issueMap);
-            }
+        for (Issue issue : issues) {
+            Map<String, Object> issueMap = new HashMap<>();
+            issueMap.put("id", issue.getId());
+            issueMap.put("title", issue.getTitle());
+            issueMap.put("projectName", issue.getProject().getName());
+            issueMap.put("status", issue.getStatus().toString());
+            issueMap.put("dueDate", issue.getDueDate() != null ? 
+                issue.getDueDate().format(java.time.format.DateTimeFormatter.ofPattern("yyyy/MM/dd")) : 
+                null);
+            unresolvedIssues.add(issueMap);
         }
         
         return unresolvedIssues;

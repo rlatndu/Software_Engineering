@@ -284,18 +284,16 @@ export const projectService = {
     },
 
     // 미해결 이슈 조회
-    getUnresolvedIssues: async (siteId: number): Promise<UnresolvedIssue[]> => {
+    getUnresolvedIssues: async (siteId: number, userId: number): Promise<UnresolvedIssue[]> => {
         try {
-            if (!siteId || isNaN(siteId)) {
-                console.error('유효하지 않은 사이트 ID:', siteId);
-                return [];
+            const response = await axiosInstance.get<ApiResponse<UnresolvedIssue[]>>(`/projects/site/${siteId}/unresolved?userId=${userId}`);
+            if (!response.data.success) {
+                throw new Error(response.data.message || '미해결 이슈 목록을 불러올 수 없습니다.');
             }
-
-            const response = await axiosInstance.get<ApiResponse<UnresolvedIssue[]>>(`/projects/site/${siteId}/unresolved`);
-            return response.data.data || [];
+            return response.data.data;
         } catch (error: any) {
-            console.error('미해결 이슈 조회 에러:', error);
-            return [];
+            console.error('미해결 이슈 목록 조회 에러:', error);
+            throw new Error(error.message || '미해결 이슈 목록을 불러올 수 없습니다.');
         }
     },
 

@@ -193,11 +193,11 @@ const Main = () => {
 
   // 미해결 이슈 로드
   const loadUnresolvedIssues = async () => {
-    if (!siteId) return;
+    if (!siteId || !user?.id) return;
     
     try {
       setRecommendLoading(true);
-      const response = await projectService.getUnresolvedIssues(Number(siteId));
+      const response = await projectService.getUnresolvedIssues(Number(siteId), user.id);
       setUnresolvedIssues(response);
     } catch (error) {
       console.error('미해결 이슈 로딩 에러:', error);

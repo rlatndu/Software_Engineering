@@ -232,9 +232,10 @@ public class ProjectController {
         @ApiResponse(responseCode = "404", description = "사이트 없음")
     })
     public ResponseEntity<Map<String, Object>> getUnresolvedIssues(
-            @Parameter(description = "사이트 ID") @PathVariable Long siteId) {
+            @Parameter(description = "사이트 ID") @PathVariable Long siteId,
+            @Parameter(description = "사용자 ID") @RequestParam Long userId) {
         try {
-            List<Map<String, Object>> unresolvedIssues = projectService.getUnresolvedIssues(siteId);
+            List<Map<String, Object>> unresolvedIssues = projectService.getUnresolvedIssues(siteId, userId);
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
