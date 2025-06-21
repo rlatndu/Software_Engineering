@@ -1,12 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import IssueEditPopup from './IssueEditPopup';
 import './ProjectBoardView.css';
-import {
-  DragDropContext,
-  Droppable,
-  Draggable,
-  DropResult,
-} from '@hello-pangea/dnd';
 import AccessDeniedPopup from '../../components/AccessDeniedPopup';
 import ConfirmPopup from '../../components/ConfirmPopup';
 import ResultPopup from '../../components/ResultPopup';
@@ -18,6 +12,12 @@ import { Project } from '../../types/project';
 import commentService from '../../api/commentService';
 import projectService from '../../api/projectService';
 import { formatDate, formatDateShort } from '../../utils/dateUtils';
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+} from '@hello-pangea/dnd';
 
 interface ProjectBoardViewProps {
   project: Project;
@@ -350,19 +350,11 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
   };
 
   const handleDragEnd = async (result: DropResult) => {
-    const { source, destination, type } = result;
+    const { source, destination } = result;
     if (!destination) return;
 
-    // 드래그 앤 드롭 권한 체크
-    if (type === 'column' && !canManageProject(user, project)) {
-      setPopup({
-        type: 'accessDenied',
-        payload: { message: '컬럼 순서를 변경할 권한이 없습니다.' }
-      });
-      return;
-    }
-
-    if (type === 'issue' && !canManageIssues(user, project)) {
+    // 이슈 이동 권한 체크
+    if (!canManageIssues(user, project)) {
       setPopup({
         type: 'accessDenied',
         payload: { message: '이슈를 이동할 권한이 없습니다.' }
@@ -371,19 +363,6 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
     }
 
     try {
-      if (type === 'column') {
-        const newColumns = Array.from(columns);
-        const [movedColumn] = newColumns.splice(source.index, 1);
-        newColumns.splice(destination.index, 0, movedColumn);
-        
-        setColumns(newColumns);
-        await boardService.updateColumnsOrder(
-          project.id,
-          newColumns.map(col => col.id)
-        );
-        return;
-      }
-
       const sourceColId = parseInt(source.droppableId);
       const destColId = parseInt(destination.droppableId);
       const sourceIssues = [...issuesByColumn[sourceColId]];
@@ -391,9 +370,11 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
 
       // 로컬 상태 먼저 업데이트
       if (sourceColId === destColId) {
+        // 같은 칼럼 내 이동
         sourceIssues.splice(destination.index, 0, movedIssue);
         setIssuesByColumn({ ...issuesByColumn, [sourceColId]: sourceIssues });
       } else {
+        // 다른 칼럼으로 이동
         const destIssues = [...(issuesByColumn[destColId] || [])];
         destIssues.splice(destination.index, 0, movedIssue);
         setIssuesByColumn({
@@ -401,9 +382,23 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
           [sourceColId]: sourceIssues,
           [destColId]: destIssues,
         });
+
+        // 이슈 상태 업데이트
+        const destColumn = columns.find(col => col.id === destColId);
+        if (destColumn) {
+          const newStatus = getStatusFromColumnTitle(destColumn.title);
+          await projectService.updateIssue(project.id, movedIssue.id, {
+            title: movedIssue.title,
+            description: movedIssue.description || '',
+            status: newStatus,
+            startDate: movedIssue.startDate,
+            endDate: movedIssue.endDate,
+            assigneeId: movedIssue.assigneeId || ''
+          });
+        }
       }
 
-      // API 호출
+      // API 호출로 이슈 위치 업데이트
       await boardService.moveIssue(
         movedIssue.id,
         destColId,
@@ -411,11 +406,27 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
       );
     } catch (err) {
       console.error('드래그 앤 드롭 처리 실패:', err);
-      // 에러 발생 시에만 전체 데이터 다시 로드
-      loadBoardData();
+      loadBoardData(); // 에러 발생 시 전체 데이터 다시 로드
     }
   };
-  
+
+  const getStatusFromColumnTitle = (columnTitle: string): string => {
+    const title = columnTitle.toLowerCase();
+    switch (title) {
+      case 'to do':
+      case '할 일':
+        return 'TODO';
+      case 'in progress':
+      case '진행 중':
+        return 'IN_PROGRESS';
+      case 'done':
+      case '완료':
+        return 'DONE';
+      default:
+        return title.toUpperCase();
+    }
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
@@ -542,344 +553,338 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <Droppable droppableId="board" direction="horizontal" type="column">
-        {(provided) => (
-          <div className="project-board-view" ref={provided.innerRef} {...provided.droppableProps}>
-            {columns.map((col, index) => {
-              console.log('Rendering column:', col.id, 'with issues:', issuesByColumn[col.id]);
-              return (
-                <Draggable draggableId={col.id.toString()} index={index} key={col.id}>
-                  {(provided) => (
-                    <div
-                      className="board-column"
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                    >
-                      <div className="board-header">
-                        <div className="board-title">
-                          <span>{col.title}</span>
-                          <img src={col.icon} alt={col.title} className="column-icon" />
-                        </div>
-                        <div className="menu-container">
-                          <button className="add-button" onClick={() => toggleColumnMenu(col.id)}>
-                            <img src="/assets/ellipsis.png" alt="menu" />
-                          </button>
-                          {menuOpenColumn === col.id && (
-                            <div className="dropdown-menu" ref={columnDropdownRef}>
-                              <button onClick={() => handleColumnEdit(col, '새 제목')}>수정</button>
-                              <button className="delete" onClick={() => handleColumnDelete(col.id)}>삭제</button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <Droppable droppableId={col.id.toString()} type="issue">
-                        {(provided) => (
-                          <div ref={provided.innerRef} {...provided.droppableProps} className="droppable-area">
-                            {(issuesByColumn[col.id] || []).map((issue, index) => (
-                              <Draggable key={issue.id} draggableId={issue.id.toString()} index={index}>
-                                {(provided) => (
-                                  <div
-                                    className="issue-card"
-                                    ref={provided.innerRef}
-                                    {...provided.draggableProps}
-                                    {...provided.dragHandleProps}
-                                    onClick={() => setSelectedIssue(issue)}
-                                  >
-                                    <div>
-                                      <div className="issue-title">{issue.title}</div>
-                                      <div className="issue-due">마감일: {formatDateShort(issue.endDate)}</div>
-                                      <div className="issue-assignee">담당자: {issue.assigneeId}</div>
-                                    </div>
-                                    <div className="menu-container">
-                                      <button
-                                        className="card-menu-button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setMenuOpenIssue(menuOpenIssue === issue.id ? null : issue.id);
-                                        }}
-                                      >
-                                        <img src="/assets/ellipsis.png" alt="card menu" />
-                                      </button>
-                                      {menuOpenIssue === issue.id && (
-                                        <div className="dropdown-menu" ref={issueDropdownRef} onClick={(e) => e.stopPropagation()}>
-                                          <button onClick={() => {
-                                            setEditingIssue(issue);
-                                            setIsEditModalOpen(true);
-                                            setMenuOpenIssue(null);
-                                          }}>수정</button>
-                                          <button className="delete" onClick={() => handleDelete(issue)}>삭제</button>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
-                              </Draggable>
-                            ))}
-                            {provided.placeholder}
-                          </div>
-                        )}
-                      </Droppable>
-                      <button className="create-issue-button" onClick={() => {
-                        if (!canCreateIssue(user, project)) {
-                          alert('이슈를 생성할 권한이 없습니다. PM 또는 관리자만 이슈를 생성할 수 있습니다.');
-                          return;
-                        }
-                        setSelectedColumn(col.id);
-                        setIsCreateModalOpen(true);
-                      }}>
-                        + 이슈 만들기
-                      </button>
+      <div className="project-board-view">
+        {columns.map((col, index) => {
+          console.log('Rendering column:', col.id, 'with issues:', issuesByColumn[col.id]);
+          return (
+            <div className="board-column" key={col.id}>
+              <div className="board-header">
+                <div className="board-title">
+                  <span>{col.title}</span>
+                  <img src={col.icon} alt={col.title} className="column-icon" />
+                </div>
+                <div className="menu-container">
+                  <button className="add-button" onClick={() => toggleColumnMenu(col.id)}>
+                    <img src="/assets/ellipsis.png" alt="menu" />
+                  </button>
+                  {menuOpenColumn === col.id && (
+                    <div className="dropdown-menu" ref={columnDropdownRef}>
+                      <button onClick={() => handleColumnEdit(col, '새 제목')}>수정</button>
+                      <button className="delete" onClick={() => handleColumnDelete(col.id)}>삭제</button>
                     </div>
                   )}
-                </Draggable>
-              );
-            })}
-            {provided.placeholder}
-            {canManageProject(user, project) && (
-              <button className="add-column-button" onClick={addColumn}>
-                <img src="/assets/plus.png" alt="add column" />
-              </button>
-            )}
+                </div>
+              </div>
 
-              {selectedIssue && (
-                <div className="issue-detail-overlay" onClick={() => setSelectedIssue(null)}>
-                  <div className="issue-detail-panel" onClick={(e) => e.stopPropagation()}>
-                    <button className="close-button" onClick={() => setSelectedIssue(null)}>✕</button>
-
-                    {/* 좌측 본문 영역 */}
-                    <div className="issue-main">
-                      <div className="issue-header-row">
-                        <h2 className="issue-title">[ {selectedIssue.title} ]</h2>
-                        <button className="detail-ellipsis"><img src="/assets/ellipsis.png" alt="menu" /></button>
-                      </div>
-
-                      <h4>설명</h4>
-                      <p>{selectedIssue.description}</p>
-
-                      <h4>첨부파일</h4>
-                      <table className="attachment-table">
-                        <thead>
-                          <tr>
-                            <th>이름</th>
-                            <th>크기</th>
-                            <th>추가된 날짜</th>
-                            <th></th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <td><i className="icon">🖼</i>[이미지 이름].png</td>
-                            <td>36 KB</td>
-                            <td>2025-03-21 15:21</td>
-                            <td><button>⬇</button></td>
-                          </tr>
-                          <tr>
-                            <td><i className="icon">📎</i>[파일 이름].pdf</td>
-                            <td>154 KB</td>
-                            <td>2025-03-21 15:21</td>
-                            <td><button>⬇</button></td>
-                          </tr>
-                        </tbody>
-                      </table>
-
-                      <h4>댓글</h4>
-                      <div className="comment-list">
-                        {comments.map(comment => (
-                          <div key={comment.id} className="comment">
-                            <div className="comment-header">
-                              <div>
-                                <strong>{comment.authorId}</strong>
-                                <span className="comment-date">
-                                  {new Date(comment.createdAt).toLocaleString()}
-                                </span>
-                              </div>
-                              {user?.userId === comment.authorId && (
-                                <div className="menu-container">
-                                  <button
-                                    className="card-menu-button"
-                                    onClick={() => setMenuOpenComment(menuOpenComment === comment.id ? null : comment.id)}
-                                  >
-                                    <img src="/assets/ellipsis.png" alt="menu" />
-                                  </button>
-                                  {menuOpenComment === comment.id && (
-                                    <div className="dropdown-menu" ref={commentDropdownRef}>
-                                      <button onClick={() => {
-                                        setEditingCommentId(comment.id);
-                                        setEditCommentContent(comment.content);
-                                        setMenuOpenComment(null);
-                                      }}>수정</button>
-                                      <button 
-                                        className="delete"
-                                        onClick={() => {
-                                          handleDeleteComment(comment.id);
-                                          setMenuOpenComment(null);
-                                        }}
-                                      >삭제</button>
-                                    </div>
-                                  )}
+              <Droppable droppableId={col.id.toString()}>
+                {(provided) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className="droppable-area"
+                  >
+                    {(issuesByColumn[col.id] || []).map((issue, index) => (
+                      <Draggable
+                        key={issue.id}
+                        draggableId={issue.id.toString()}
+                        index={index}
+                      >
+                        {(provided) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            className="issue-card"
+                            onClick={() => setSelectedIssue(issue)}
+                          >
+                            <div>
+                              <div className="issue-title">{issue.title}</div>
+                              <div className="issue-due">마감일: {formatDateShort(issue.endDate)}</div>
+                              <div className="issue-assignee">담당자: {issue.assigneeId}</div>
+                            </div>
+                            <div className="menu-container">
+                              <button
+                                className="card-menu-button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setMenuOpenIssue(menuOpenIssue === issue.id ? null : issue.id);
+                                }}
+                              >
+                                <img src="/assets/ellipsis.png" alt="card menu" />
+                              </button>
+                              {menuOpenIssue === issue.id && (
+                                <div className="dropdown-menu" ref={issueDropdownRef} onClick={(e) => e.stopPropagation()}>
+                                  <button onClick={() => {
+                                    setEditingIssue(issue);
+                                    setIsEditModalOpen(true);
+                                    setMenuOpenIssue(null);
+                                  }}>수정</button>
+                                  <button className="delete" onClick={() => handleDelete(issue)}>삭제</button>
                                 </div>
                               )}
                             </div>
-                            {editingCommentId === comment.id ? (
-                              <div className="edit-comment">
-                                <textarea
-                                  value={editCommentContent}
-                                  onChange={(e) => setEditCommentContent(e.target.value)}
-                                  className="comment-edit-input"
-                                />
-                                <div className="edit-actions">
-                                  <button onClick={() => handleUpdateComment(comment.id)}>저장</button>
-                                  <button onClick={() => {
-                                    setEditingCommentId(null);
-                                    setEditCommentContent('');
-                                  }}>취소</button>
-                                </div>
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+              <button className="create-issue-button" onClick={() => {
+                if (!canCreateIssue(user, project)) {
+                  alert('이슈를 생성할 권한이 없습니다. PM 또는 관리자만 이슈를 생성할 수 있습니다.');
+                  return;
+                }
+                setSelectedColumn(col.id);
+                setIsCreateModalOpen(true);
+              }}>
+                + 이슈 만들기
+              </button>
+            </div>
+          );
+        })}
+        {canManageProject(user, project) && (
+          <button className="add-column-button" onClick={addColumn}>
+            <img src="/assets/plus.png" alt="add column" />
+          </button>
+        )}
+
+        {selectedIssue && (
+          <div className="issue-detail-overlay" onClick={() => setSelectedIssue(null)}>
+            <div className="issue-detail-panel" onClick={(e) => e.stopPropagation()}>
+              <button className="close-button" onClick={() => setSelectedIssue(null)}>✕</button>
+
+              {/* 좌측 본문 영역 */}
+              <div className="issue-main">
+                <div className="issue-header-row">
+                  <h2 className="issue-title">[ {selectedIssue.title} ]</h2>
+                  <button className="detail-ellipsis"><img src="/assets/ellipsis.png" alt="menu" /></button>
+                </div>
+
+                <h4>설명</h4>
+                <p>{selectedIssue.description}</p>
+
+                <h4>첨부파일</h4>
+                <table className="attachment-table">
+                  <thead>
+                    <tr>
+                      <th>이름</th>
+                      <th>크기</th>
+                      <th>추가된 날짜</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><i className="icon">🖼</i>[이미지 이름].png</td>
+                      <td>36 KB</td>
+                      <td>2025-03-21 15:21</td>
+                      <td><button>⬇</button></td>
+                    </tr>
+                    <tr>
+                      <td><i className="icon">📎</i>[파일 이름].pdf</td>
+                      <td>154 KB</td>
+                      <td>2025-03-21 15:21</td>
+                      <td><button>⬇</button></td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <h4>댓글</h4>
+                <div className="comment-list">
+                  {comments.map(comment => (
+                    <div key={comment.id} className="comment">
+                      <div className="comment-header">
+                        <div>
+                          <strong>{comment.authorId}</strong>
+                          <span className="comment-date">
+                            {new Date(comment.createdAt).toLocaleString()}
+                          </span>
+                        </div>
+                        {user?.userId === comment.authorId && (
+                          <div className="menu-container">
+                            <button
+                              className="card-menu-button"
+                              onClick={() => setMenuOpenComment(menuOpenComment === comment.id ? null : comment.id)}
+                            >
+                              <img src="/assets/ellipsis.png" alt="menu" />
+                            </button>
+                            {menuOpenComment === comment.id && (
+                              <div className="dropdown-menu" ref={commentDropdownRef}>
+                                <button onClick={() => {
+                                  setEditingCommentId(comment.id);
+                                  setEditCommentContent(comment.content);
+                                  setMenuOpenComment(null);
+                                }}>수정</button>
+                                <button 
+                                  className="delete"
+                                  onClick={() => {
+                                    handleDeleteComment(comment.id);
+                                    setMenuOpenComment(null);
+                                  }}
+                                >삭제</button>
                               </div>
-                            ) : (
-                              <p>{comment.content}</p>
                             )}
                           </div>
-                        ))}
+                        )}
                       </div>
-                      <div className="comment-input-wrapper">
-                        <input
-                          className="comment-input"
-                          placeholder="댓글 작성..."
-                          value={newComment}
-                          onChange={(e) => setNewComment(e.target.value)}
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                              handleSubmitComment();
-                            }
-                          }}
-                        />
-                        <button
-                          className="comment-submit-button"
-                          onClick={handleSubmitComment}
-                        >
-                          보내기
-                        </button>
-                      </div>
+                      {editingCommentId === comment.id ? (
+                        <div className="edit-comment">
+                          <textarea
+                            value={editCommentContent}
+                            onChange={(e) => setEditCommentContent(e.target.value)}
+                            className="comment-edit-input"
+                          />
+                          <div className="edit-actions">
+                            <button onClick={() => handleUpdateComment(comment.id)}>저장</button>
+                            <button onClick={() => {
+                              setEditingCommentId(null);
+                              setEditCommentContent('');
+                            }}>취소</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p>{comment.content}</p>
+                      )}
                     </div>
-
-                    {/* 우측 사이드 영역 */}
-                    <div className="issue-sidebar">
-                      <h4>세부사항</h4>
-                      <p><strong>담당자:</strong> {selectedIssue.assigneeId}</p>
-                      <p><strong>상태:</strong> {selectedIssue.status}</p>
-                      <p><strong>시작일:</strong> {formatDate(selectedIssue.startDate)}</p>
-                      <p><strong>마감일:</strong> {formatDate(selectedIssue.endDate)}</p>
-                      <p><strong>보고자:</strong> {selectedIssue.reporterId}</p>
-                    </div>  
-                  </div>
+                  ))}
                 </div>
-              )}
+                <div className="comment-input-wrapper">
+                  <input
+                    className="comment-input"
+                    placeholder="댓글 작성..."
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        handleSubmitComment();
+                      }
+                    }}
+                  />
+                  <button
+                    className="comment-submit-button"
+                    onClick={handleSubmitComment}
+                  >
+                    보내기
+                  </button>
+                </div>
+              </div>
+
+              {/* 우측 사이드 영역 */}
+              <div className="issue-sidebar">
+                <h4>세부사항</h4>
+                <p><strong>담당자:</strong> {selectedIssue.assigneeId}</p>
+                <p><strong>상태:</strong> {selectedIssue.status}</p>
+                <p><strong>시작일:</strong> {formatDate(selectedIssue.startDate)}</p>
+                <p><strong>마감일:</strong> {formatDate(selectedIssue.endDate)}</p>
+                <p><strong>보고자:</strong> {selectedIssue.reporterId}</p>
+              </div>  
+            </div>
           </div>
         )}
-      </Droppable>
-      {isEditModalOpen && editingIssue && (
-        <IssueEditPopup
-          issue={{
-            id: editingIssue.id,
-            title: editingIssue.title,
-            description: editingIssue.description || '',
-            status: editingIssue.status || 'TODO',
-            start_date: editingIssue.startDate,
-            end_date: editingIssue.endDate,
-            assignee_id: editingIssue.assigneeId || null,
-            assignee_name: editingIssue.assigneeId || ''
-          }}
-          projectId={project.id}
-          projectName={project.name}
-          onClose={() => setIsEditModalOpen(false)}
-          onSave={async (updated) => {
-            try {
-              const response = await projectService.updateIssue(project.id, editingIssue.id, {
-                title: updated.title,
-                description: updated.description,
-                status: updated.status,
-                startDate: updated.startDate,
-                endDate: updated.endDate,
-                assigneeId: updated.assigneeId
-              });
-              
-              // 이슈 상태가 변경된 경우 해당하는 칼럼으로 이동
-              const targetColumnId = getColumnIdForStatus(updated.status);
-              
-              setIssuesByColumn(prev => {
-                const updatedColumns = { ...prev };
-                
-                // 모든 칼럼에서 해당 이슈 제거
-                Object.keys(updatedColumns).forEach(colId => {
-                  const columnId = parseInt(colId);
-                  updatedColumns[columnId] = updatedColumns[columnId].filter((issue: BoardIssue) => 
-                    issue.id !== editingIssue.id
-                  );
+        {isEditModalOpen && editingIssue && (
+          <IssueEditPopup
+            issue={{
+              id: editingIssue.id,
+              title: editingIssue.title,
+              description: editingIssue.description || '',
+              status: editingIssue.status || 'TODO',
+              start_date: editingIssue.startDate,
+              end_date: editingIssue.endDate,
+              assignee_id: editingIssue.assigneeId || null,
+              assignee_name: editingIssue.assigneeId || ''
+            }}
+            projectId={project.id}
+            projectName={project.name}
+            onClose={() => setIsEditModalOpen(false)}
+            onSave={async (updated) => {
+              try {
+                const response = await projectService.updateIssue(project.id, editingIssue.id, {
+                  title: updated.title,
+                  description: updated.description,
+                  status: updated.status,
+                  startDate: updated.startDate,
+                  endDate: updated.endDate,
+                  assigneeId: updated.assigneeId
                 });
                 
-                // 새로운 칼럼에 업데이트된 이슈 추가
-                if (!updatedColumns[targetColumnId]) {
-                  updatedColumns[targetColumnId] = [];
-                }
-                updatedColumns[targetColumnId].push({
-                  ...editingIssue,
-                  ...response,
-                  columnId: targetColumnId
-                });
+                // 이슈 상태가 변경된 경우 해당하는 칼럼으로 이동
+                const targetColumnId = getColumnIdForStatus(updated.status);
                 
-                return updatedColumns;
-              });
+                setIssuesByColumn(prev => {
+                  const updatedColumns = { ...prev };
+                  
+                  // 모든 칼럼에서 해당 이슈 제거
+                  Object.keys(updatedColumns).forEach(colId => {
+                    const columnId = parseInt(colId);
+                    updatedColumns[columnId] = updatedColumns[columnId].filter((issue: BoardIssue) => 
+                      issue.id !== editingIssue.id
+                    );
+                  });
+                  
+                  // 새로운 칼럼에 업데이트된 이슈 추가
+                  if (!updatedColumns[targetColumnId]) {
+                    updatedColumns[targetColumnId] = [];
+                  }
+                  updatedColumns[targetColumnId].push({
+                    ...editingIssue,
+                    ...response,
+                    columnId: targetColumnId
+                  });
+                  
+                  return updatedColumns;
+                });
 
-              setIsEditModalOpen(false);
-              setPopup({
-                type: 'result',
-                payload: { message: '이슈가 성공적으로 수정되었습니다.' }
-              });
-            } catch (error: any) {
-              setPopup({
-                type: 'result',
-                payload: { message: error.message || '이슈 수정에 실패했습니다.' }
-              });
-            }
-          }}
-        />
-      )}
-      {isCreateModalOpen && selectedColumn !== null && (
-        <IssueCreatePopup
-          onClose={() => {
-            setIsCreateModalOpen(false);
-            setSelectedColumn(null);
-          }}
-          onCreate={(newIssue) => handleCreateIssue(selectedColumn, newIssue)}
-          selectedColumn={selectedColumn.toString()}
-          projectId={project.id}
-          projectName={project.name}
-          initialStatus={columns.find(col => col.id === selectedColumn)?.title.toUpperCase() || 'TODO'}
-          setPopup={setPopup}
-        />
-      )}
-      {popup.type === 'accessDenied' && (
-        <AccessDeniedPopup
-          message={popup.payload?.message || ''}
-          onClose={() => setPopup({ type: null })}
-        />
-      )}
-      {popup.type === 'confirmDelete' && (
-        <ConfirmPopup
-          title="이슈 삭제"
-          message={`[ ${popup.payload?.title} ] 이슈를 삭제하시겠습니까?`}
-          onConfirm={handleConfirmDelete}
-          onCancel={() => setPopup({ type: null })}
-        />
-      )}
-      {popup.type === 'result' && (
-        <ResultPopup
-          message={popup.payload?.message || ''}
-          onClose={() => setPopup({ type: null })}
-        />
-      )}
+                setIsEditModalOpen(false);
+                setPopup({
+                  type: 'result',
+                  payload: { message: '이슈가 성공적으로 수정되었습니다.' }
+                });
+              } catch (error: any) {
+                setPopup({
+                  type: 'result',
+                  payload: { message: error.message || '이슈 수정에 실패했습니다.' }
+                });
+              }
+            }}
+          />
+        )}
+        {isCreateModalOpen && selectedColumn !== null && (
+          <IssueCreatePopup
+            onClose={() => {
+              setIsCreateModalOpen(false);
+              setSelectedColumn(null);
+            }}
+            onCreate={(newIssue) => handleCreateIssue(selectedColumn, newIssue)}
+            selectedColumn={selectedColumn.toString()}
+            projectId={project.id}
+            projectName={project.name}
+            initialStatus={columns.find(col => col.id === selectedColumn)?.title.toUpperCase() || 'TODO'}
+            setPopup={setPopup}
+          />
+        )}
+        {popup.type === 'accessDenied' && (
+          <AccessDeniedPopup
+            message={popup.payload?.message || ''}
+            onClose={() => setPopup({ type: null })}
+          />
+        )}
+        {popup.type === 'confirmDelete' && (
+          <ConfirmPopup
+            title="이슈 삭제"
+            message={`[ ${popup.payload?.title} ] 이슈를 삭제하시겠습니까?`}
+            onConfirm={handleConfirmDelete}
+            onCancel={() => setPopup({ type: null })}
+          />
+        )}
+        {popup.type === 'result' && (
+          <ResultPopup
+            message={popup.payload?.message || ''}
+            onClose={() => setPopup({ type: null })}
+          />
+        )}
+      </div>
     </DragDropContext>
   );
 };

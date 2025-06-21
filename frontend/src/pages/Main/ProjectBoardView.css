@@ -9,7 +9,7 @@
   margin-top: 0.5vh;
   margin-right: 1vh;
   height: calc(100vh - 27vh);
-  overflow-x: auto;
+  overflow-x: hidden;
   background-color: #ededed !important;
   box-shadow: none !important;
   border: none !important;
@@ -26,12 +26,12 @@
   flex-direction: column;
   justify-content: flex-start;
   position: relative;
-  overflow-y: auto;
-  overflow: visible;
+  overflow-y: hidden;
   max-height: 100%;
   background-color: #ededed !important;
   box-shadow: none !important;
   border: none !important;
+  overscroll-behavior: contain;
 }
 
 /* 컬럼 제목 및 버튼 라인 */
