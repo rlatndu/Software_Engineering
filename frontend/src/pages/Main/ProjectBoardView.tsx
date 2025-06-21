@@ -451,25 +451,29 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
 
       if (sourceColId === destColId) {
         // 같은 칼럼 내 이동
-        if (!canMoveWithin) {
+        // 프로젝트 멤버 여부만 확인 (이미 캐시된 상태 사용)
+        if (!user || !user.roles.projectRoles[project.id]) {
           setPopup({
             type: 'accessDenied',
-            payload: { message: '이슈를 이동할 권한이 없습니다. 프로젝트 멤버만 칼럼 내에서 이슈를 이동할 수 있습니다.' }
+            payload: { message: '이슈를 이동할 권한이 없습니다. 프로젝트 멤버만 이슈를 이동할 수 있습니다.' }
           });
           return;
         }
 
+        // UI 업데이트
         sourceIssues.splice(destination.index, 0, movedIssue);
         setIssuesByColumn({ ...issuesByColumn, [sourceColId]: sourceIssues });
 
-        // 전체 순서 업데이트 - 1000 단위로 간격을 두어 중간 삽입 용이하게 함
+        // 사용자별 순서 업데이트 - 1000 단위로 간격을 두어 중간 삽입 용이하게 함
         const orderUpdates = sourceIssues.map((issue, index) => ({
           issueId: issue.id,
           order: (index + 1) * 1000
         }));
 
-        // 순서 업데이트 API 호출
-        await projectService.updateIssueOrders(project.id, orderUpdates, user?.id || 0);
+        // 순서 업데이트 API 호출 - 사용자별 순서 저장
+        if (user) {
+          await projectService.updateIssueOrders(project.id, orderUpdates, user.id);
+        }
       } else {
         // 다른 칼럼으로 이동
         const isAssignee = movedIssue.assigneeId ? Number(movedIssue.assigneeId) === user?.id : false;
@@ -496,7 +500,7 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
         const column = columns.find(col => col.id === destColId);
         if (!column) throw new Error('칼럼을 찾을 수 없습니다.');
 
-        // 출발지와 도착지 칼럼의 순서 모두 업데이트
+        // 출발지와 도착지 칼럼의 순서 모두 업데이트 - 사용자별 순서 저장
         const sourceOrderUpdates = sourceIssues.map((issue, index) => ({
           issueId: issue.id,
           order: (index + 1) * 1000
@@ -507,18 +511,20 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
           order: (index + 1) * 1000
         }));
 
-        // 순서 업데이트 API 호출
-        await projectService.updateIssueOrders(project.id, [...sourceOrderUpdates, ...destOrderUpdates], user?.id || 0);
+        if (user) {
+          // 순서 업데이트 API 호출 - 사용자별 순서 저장
+          await projectService.updateIssueOrders(project.id, [...sourceOrderUpdates, ...destOrderUpdates], user.id);
 
-        // 이슈 정보 업데이트 (상태 변경)
-        await projectService.updateIssue(project.id, movedIssue.id, {
-          title: movedIssue.title,
-          description: movedIssue.description || '',
-          status: column.title,
-          startDate: movedIssue.startDate,
-          endDate: movedIssue.endDate,
-          assigneeId: movedIssue.assigneeId || ''
-        });
+          // 이슈 정보 업데이트 (상태 변경)
+          await projectService.updateIssue(project.id, movedIssue.id, {
+            title: movedIssue.title,
+            description: movedIssue.description || '',
+            status: column.title,
+            startDate: movedIssue.startDate,
+            endDate: movedIssue.endDate,
+            assigneeId: movedIssue.assigneeId || ''
+          });
+        }
       }
     } catch (error) {
       console.error('이슈 이동 중 오류 발생:', error);
