@@ -33917,3 +33917,30 @@
         issues i1_0 
     where
         i1_0.id=?
+2025-06-20 15:29:52.084 [background-preinit] [INFO ] o.h.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.1.Final
+2025-06-20 15:29:52.287 [main] [INFO ] c.e.s.SoftwareEngineeringApplication - Starting SoftwareEngineeringApplication using Java 17.0.15 with PID 20500 (C:\Users\ksyks\OneDrive\Desktop\Slime\backend\build\classes\java\main started by ksyks in C:\Users\ksyks\OneDrive\Desktop\Slime\backend)
+2025-06-20 15:29:52.288 [main] [DEBUG] c.e.s.SoftwareEngineeringApplication - Running with Spring Boot v3.2.3, Spring v6.1.4
+2025-06-20 15:29:52.290 [main] [INFO ] c.e.s.SoftwareEngineeringApplication - No active profile set, falling back to 1 default profile: "default"
+2025-06-20 15:29:55.307 [main] [INFO ] o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-06-20 15:29:55.571 [main] [INFO ] o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 249 ms. Found 20 JPA repository interfaces.
+2025-06-20 15:29:57.552 [main] [INFO ] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8081 (http)
+2025-06-20 15:29:57.586 [main] [INFO ] o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-0.0.0.0-8081"]
+2025-06-20 15:29:57.594 [main] [INFO ] o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-06-20 15:29:57.595 [main] [INFO ] o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.19]
+2025-06-20 15:29:57.843 [main] [INFO ] o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2025-06-20 15:29:57.844 [main] [INFO ] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 5425 ms
+2025-06-20 15:29:58.544 [main] [INFO ] o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2025-06-20 15:29:58.785 [main] [INFO ] org.hibernate.Version - HHH000412: Hibernate ORM core version 6.4.4.Final
+2025-06-20 15:29:58.901 [main] [INFO ] o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2025-06-20 15:29:59.955 [main] [INFO ] o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-06-20 15:30:00.154 [main] [INFO ] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2025-06-20 15:30:02.847 [main] [INFO ] com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@78e387d6
+2025-06-20 15:30:02.856 [main] [INFO ] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2025-06-20 15:30:03.375 [main] [WARN ] org.hibernate.orm.deprecation - HHH90000025: MySQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2025-06-20 15:30:08.101 [main] [INFO ] o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2025-06-20 15:30:26.861 [main] [INFO ] o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-06-20 15:30:28.724 [main] [INFO ] o.s.d.j.r.query.QueryEnhancerFactory - Hibernate is in classpath; If applicable, HQL parser will be used.
+2025-06-20 15:30:43.394 [main] [INFO ] o.s.s.web.DefaultSecurityFilterChain - Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@5bafbe15, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@1b506c3b, org.springframework.security.web.context.SecurityContextHolderFilter@4baa82c, org.springframework.security.web.header.HeaderWriterFilter@2222aa18, org.springframework.web.filter.CorsFilter@52416fd7, org.springframework.security.web.authentication.logout.LogoutFilter@4b082a6e, com.example.softwareengineering.config.JwtAuthenticationFilter@4eeff1e3, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@6aaa7944, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@615dbdd0, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@6816b13d, org.springframework.security.web.access.ExceptionTranslationFilter@5f936aad, org.springframework.security.web.access.intercept.AuthorizationFilter@304e1e2d]
+2025-06-20 15:30:44.846 [main] [INFO ] o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-0.0.0.0-8081"]
+2025-06-20 15:30:44.972 [main] [INFO ] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8081 (http) with context path ''
+2025-06-20 15:30:45.061 [main] [INFO ] c.e.s.SoftwareEngineeringApplication - Started SoftwareEngineeringApplication in 54.655 seconds (process running for 55.799)

@@ -16,6 +16,7 @@ import siteService, { Site } from "../../api/siteService";
 import TeamPage from "../Team/TeamPage";
 import ActivityLogView from './ActivityLogView';
 import { activityService } from "../../api/activityService";
+import { ActivityLog } from "../../types/activity";
 
 type TabType = 'recommend' | 'recent' | 'project' | 'dashboard' | 'team';
 type RecommendSubTab = 'recent' | 'unresolved';
@@ -502,11 +503,11 @@ const Main = () => {
   }, [siteId, activityFilter, user?.userId, activeTab]);
 
   // 활동 클릭 핸들러
-  const handleActivityClick = (activity: RecentWork) => {
-    // 활동 내역의 description을 파싱하여 필요한 정보 추출
-    const description = activity.description.toLowerCase();
+  const handleActivityClick = (activity: ActivityLog) => {
+    // 활동 내역의 content를 파싱하여 필요한 정보 추출
+    const content = activity.content.toLowerCase();
     
-    if (description.includes('댓글')) {
+    if (content.includes('댓글')) {
       // 댓글 관련 활동인 경우 해당 프로젝트의 상세 페이지로 이동
       setActiveTab('project');
       const project = projects.find(p => p.name === activity.projectName);

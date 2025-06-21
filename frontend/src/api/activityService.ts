@@ -116,10 +116,10 @@ export const activityService = {
   // 프로젝트의 최근 활동 조회
   getProjectActivities: async (projectId: number, limit: number = 30) => {
     try {
-      const response = await axios.get<ApiResponse<ActivityLog[]>>(`${API_URL}/project/${projectId}/recent`, {
-        params: { limit }
-      });
-      return response.data.data;
+    const response = await axios.get<ApiResponse<ActivityLog[]>>(`${API_URL}/project/${projectId}/recent`, {
+      params: { limit }
+    });
+    return response.data.data;
     } catch (error: any) {
       console.error('프로젝트 활동 내역 조회 실패:', error);
       throw new Error(error.response?.data?.message || '프로젝트 활동 내역 조회에 실패했습니다.');
