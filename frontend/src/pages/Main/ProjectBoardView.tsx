@@ -274,7 +274,7 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
       // 새로운 이슈를 해당하는 상태의 칼럼에 추가
       setIssuesByColumn(prev => ({
         ...prev,
-        [targetColumnId]: [...(prev[targetColumnId] || []), { ...newIssue, columnId: targetColumnId }]
+        [columnId]: [...(prev[columnId] || []), { ...newIssue, columnId }]
       }));
 
       setIsCreateModalOpen(false);
@@ -283,7 +283,7 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
         setPopup({ type: 'result', payload: { message: '이슈가 생성되었습니다.' } });
       }, 100);
 
-      return { id: newIssue.id }; // 여기서 id를 포함한 객체를 반환
+      return { id: newIssue.id };
     } catch (err) {
       console.error('이슈 생성 실패:', err);
       setPopup({
@@ -373,6 +373,29 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
         // 같은 칼럼 내 이동
         sourceIssues.splice(destination.index, 0, movedIssue);
         setIssuesByColumn({ ...issuesByColumn, [sourceColId]: sourceIssues });
+
+        // 순서 정보만 업데이트
+        try {
+          await projectService.updateIssue(project.id, movedIssue.id, {
+            title: movedIssue.title,
+            description: movedIssue.description || '',
+            status: movedIssue.status,
+            startDate: movedIssue.startDate,
+            endDate: movedIssue.endDate,
+            assigneeId: movedIssue.assigneeId || ''
+          });
+
+          // 순서와 상태 정보 업데이트
+          await boardService.updateIssueStatus(
+            movedIssue.id,
+            movedIssue.status,
+            sourceColId,
+            destination.index
+          );
+        } catch (error) {
+          console.error('이슈 순서 업데이트 실패:', error);
+          loadBoardData(); // 실패 시 데이터 리로드
+        }
       } else {
         // 다른 칼럼으로 이동
         const destIssues = [...(issuesByColumn[destColId] || [])];
@@ -383,27 +406,48 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
           [destColId]: destIssues,
         });
 
-        // 이슈 상태 업데이트
+        // 이슈 상태와 순서 함께 업데이트
         const destColumn = columns.find(col => col.id === destColId);
         if (destColumn) {
           const newStatus = getStatusFromColumnTitle(destColumn.title);
-          await projectService.updateIssue(project.id, movedIssue.id, {
-            title: movedIssue.title,
-            description: movedIssue.description || '',
-            status: newStatus,
-            startDate: movedIssue.startDate,
-            endDate: movedIssue.endDate,
-            assigneeId: movedIssue.assigneeId || ''
-          });
+          try {
+            await projectService.updateIssue(project.id, movedIssue.id, {
+              title: movedIssue.title,
+              description: movedIssue.description || '',
+              status: newStatus,
+              startDate: movedIssue.startDate,
+              endDate: movedIssue.endDate,
+              assigneeId: movedIssue.assigneeId || ''
+            });
+
+            // 순서와 상태 정보 업데이트
+            await boardService.updateIssueStatus(
+              movedIssue.id,
+              newStatus,
+              destColId,
+              destination.index
+            );
+          } catch (error) {
+            console.error('이슈 상태 및 순서 업데이트 실패:', error);
+            loadBoardData(); // 실패 시 데이터 리로드
+          }
         }
       }
 
-      // API 호출로 이슈 위치 업데이트
-      await boardService.moveIssue(
-        movedIssue.id,
-        destColId,
-        destination.index
-      );
+      // 모든 이슈의 순서 정보 업데이트
+      const columnIssues = issuesByColumn[destColId] || [];
+      const orderUpdates = columnIssues.map((issue, index) => ({
+        issueId: issue.id,
+        newOrder: index  // order를 newOrder로 변경
+      }));
+
+      if (orderUpdates.length > 0) {
+        try {
+          await projectService.updateIssueOrders(project.id, orderUpdates, user?.id || 0);
+        } catch (error) {
+          console.error('이슈 순서 일괄 업데이트 실패:', error);
+        }
+      }
     } catch (err) {
       console.error('드래그 앤 드롭 처리 실패:', err);
       loadBoardData(); // 에러 발생 시 전체 데이터 다시 로드

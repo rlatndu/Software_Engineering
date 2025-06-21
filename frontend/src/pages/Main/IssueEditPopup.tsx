@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { DateRange } from 'react-date-range';
 import { ko } from 'date-fns/locale';
 import { useAuth } from '../../contexts/AuthContext';
-import { projectService, ProjectMember } from '../../api/projectService';
+import { projectService } from '../../api/projectService';
+import { ProjectMember } from '../../types/project';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
 import './IssueCreatePopup.css';
@@ -43,13 +44,17 @@ interface FormState {
   };
 }
 
+interface ProjectMemberWithName extends ProjectMember {
+  name: string;
+}
+
 const IssueEditPopup: React.FC<IssueEditPopupProps> = ({ issue, onClose, onSave, projectId, projectName }) => {
   const { user } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
   
   console.log('Issue data received:', issue); // 디버깅용 로그 추가
   
-  const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([]);
+  const [projectMembers, setProjectMembers] = useState<ProjectMemberWithName[]>([]);
   
   // form 초기 상태 설정
   const initialForm: FormState = {
@@ -77,13 +82,17 @@ const IssueEditPopup: React.FC<IssueEditPopupProps> = ({ issue, onClose, onSave,
     const fetchProjectMembers = async () => {
       try {
         const members = await projectService.getProjectMembers(projectId);
-        setProjectMembers(members);
-        console.log('Project members:', members);
+        const membersWithName = members.map(member => ({
+          ...member,
+          name: member.userId // 임시로 userId를 name으로 사용
+        }));
+        setProjectMembers(membersWithName);
+        console.log('Project members:', membersWithName);
         console.log('Current assignee_id:', issue.assignee_id);
         
         // 프로젝트 멤버가 로드된 후 담당자 설정
         if (issue.assignee_id) {
-          const assignee = members.find(member => member.userId === issue.assignee_id);
+          const assignee = membersWithName.find(member => member.userId === issue.assignee_id);
           if (assignee) {
             setForm(prev => ({
               ...prev,
