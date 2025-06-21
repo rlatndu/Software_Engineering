@@ -255,9 +255,18 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
     }
 
     try {
+      // 상태에 맞는 칼럼 찾기
+      const normalizedStatus = issueData.status?.replace(/[_\s]/g, '').toUpperCase();
+      const targetColumn = columns.find(col => 
+        col.title.replace(/[_\s]/g, '').toUpperCase() === normalizedStatus
+      );
+
+      // 상태에 맞는 칼럼을 찾지 못한 경우 선택된 칼럼 사용
+      const targetColumnId = targetColumn ? targetColumn.id : columnId;
+
       const createData = {
         ...issueData,
-        columnId: columnId,
+        columnId: targetColumnId,
         projectId: project.id,
         reporterId: user?.userId,
         startDate: issueData.startDate || new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString(),
@@ -265,16 +274,17 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
       };
 
       console.log('Creating issue with data:', createData);
-      const newIssue = await boardService.createIssue(project.id, columnId, createData);
+      const newIssue = await boardService.createIssue(project.id, targetColumnId, createData);
       console.log('Created new issue:', newIssue);
-
-      // 상태값에 맞는 칼럼 ID 찾기
-      const targetColumnId = getColumnIdForStatus(issueData.status || 'TODO');
 
       // 새로운 이슈를 해당하는 상태의 칼럼에 추가
       setIssuesByColumn(prev => ({
         ...prev,
-        [columnId]: [...(prev[columnId] || []), { ...newIssue, columnId }]
+        [targetColumnId]: [...(prev[targetColumnId] || []), { 
+          ...newIssue, 
+          columnId: targetColumnId,
+          order: prev[targetColumnId] ? prev[targetColumnId].length : 0 // 해당 칼럼의 마지막 순서로 설정
+        }]
       }));
 
       setIsCreateModalOpen(false);
@@ -349,6 +359,32 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
     }
   };
 
+  // 이슈 위치 업데이트를 위한 통합 함수
+  const updateIssuePosition = async (
+    issueId: number,
+    data: {
+      status: string;
+      columnId: number;
+      order: number;
+      projectId: number;
+    }
+  ) => {
+    try {
+      // 상태와 순서를 한 번에 업데이트하는 API 호출
+      await boardService.updateIssueStatus(
+        issueId,
+        data.status,
+        data.columnId,
+        data.order,
+        data.projectId
+      );
+      return true;
+    } catch (error) {
+      console.error('이슈 위치 업데이트 실패:', error);
+      throw new Error('이슈 위치 업데이트에 실패했습니다.');
+    }
+  };
+
   const handleDragEnd = async (result: DropResult) => {
     const { source, destination } = result;
     if (!destination) return;
@@ -362,95 +398,79 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
       return;
     }
 
+    const sourceColId = parseInt(source.droppableId);
+    const destColId = parseInt(destination.droppableId);
+    
+    // 현재 상태 백업
+    const currentState = { ...issuesByColumn };
+    
     try {
-      const sourceColId = parseInt(source.droppableId);
-      const destColId = parseInt(destination.droppableId);
+      // 이동할 이슈 찾기
       const sourceIssues = [...issuesByColumn[sourceColId]];
       const [movedIssue] = sourceIssues.splice(source.index, 1);
 
-      // 로컬 상태 먼저 업데이트
       if (sourceColId === destColId) {
         // 같은 칼럼 내 이동
         sourceIssues.splice(destination.index, 0, movedIssue);
         setIssuesByColumn({ ...issuesByColumn, [sourceColId]: sourceIssues });
 
-        // 순서 정보만 업데이트
-        try {
-          await projectService.updateIssue(project.id, movedIssue.id, {
-            title: movedIssue.title,
-            description: movedIssue.description || '',
-            status: movedIssue.status,
-            startDate: movedIssue.startDate,
-            endDate: movedIssue.endDate,
-            assigneeId: movedIssue.assigneeId || ''
-          });
+        // 전체 순서 업데이트
+        const orderUpdates = sourceIssues.map((issue, index) => ({
+          issueId: issue.id,
+          newOrder: index
+        }));
 
-          // 순서와 상태 정보 업데이트
-          await boardService.updateIssueStatus(
-            movedIssue.id,
-            movedIssue.status,
-            sourceColId,
-            destination.index
-          );
-        } catch (error) {
-          console.error('이슈 순서 업데이트 실패:', error);
-          loadBoardData(); // 실패 시 데이터 리로드
-        }
+        // 순서 업데이트 API 호출
+        await projectService.updateIssueOrders(project.id, orderUpdates, user?.id || 0);
       } else {
         // 다른 칼럼으로 이동
         const destIssues = [...(issuesByColumn[destColId] || [])];
         destIssues.splice(destination.index, 0, movedIssue);
-        setIssuesByColumn({
+        
+        // UI 상태 업데이트
+        const newIssuesByColumn = {
           ...issuesByColumn,
           [sourceColId]: sourceIssues,
-          [destColId]: destIssues,
+          [destColId]: destIssues
+        };
+        setIssuesByColumn(newIssuesByColumn);
+
+        // 이슈 상태 업데이트
+        const column = columns.find(col => col.id === destColId);
+        if (!column) throw new Error('칼럼을 찾을 수 없습니다.');
+
+        // 이슈 정보 업데이트
+        await projectService.updateIssue(project.id, movedIssue.id, {
+          title: movedIssue.title,
+          description: movedIssue.description || '',
+          status: column.title,
+          startDate: movedIssue.startDate,
+          endDate: movedIssue.endDate,
+          assigneeId: movedIssue.assigneeId || ''
         });
 
-        // 이슈 상태와 순서 함께 업데이트
-        const destColumn = columns.find(col => col.id === destColId);
-        if (destColumn) {
-          const newStatus = getStatusFromColumnTitle(destColumn.title);
-          try {
-            await projectService.updateIssue(project.id, movedIssue.id, {
-              title: movedIssue.title,
-              description: movedIssue.description || '',
-              status: newStatus,
-              startDate: movedIssue.startDate,
-              endDate: movedIssue.endDate,
-              assigneeId: movedIssue.assigneeId || ''
-            });
+        // 출발지와 도착지 칼럼의 순서 모두 업데이트
+        const sourceOrderUpdates = sourceIssues.map((issue, index) => ({
+          issueId: issue.id,
+          newOrder: index
+        }));
 
-            // 순서와 상태 정보 업데이트
-            await boardService.updateIssueStatus(
-              movedIssue.id,
-              newStatus,
-              destColId,
-              destination.index
-            );
-          } catch (error) {
-            console.error('이슈 상태 및 순서 업데이트 실패:', error);
-            loadBoardData(); // 실패 시 데이터 리로드
-          }
-        }
+        const destOrderUpdates = destIssues.map((issue, index) => ({
+          issueId: issue.id,
+          newOrder: index
+        }));
+
+        // 순서 업데이트 API 호출
+        await projectService.updateIssueOrders(project.id, [...sourceOrderUpdates, ...destOrderUpdates], user?.id || 0);
       }
-
-      // 모든 이슈의 순서 정보 업데이트
-      const columnIssues = issuesByColumn[destColId] || [];
-      const orderUpdates = columnIssues.map((issue, index) => ({
-        issueId: issue.id,
-        newOrder: index  // order를 newOrder로 변경
-      }));
-
-      if (orderUpdates.length > 0) {
-        try {
-          await projectService.updateIssueOrders(project.id, orderUpdates, user?.id || 0);
-        } catch (error) {
-          console.error('이슈 순서 일괄 업데이트 실패:', error);
-        }
-      }
-    } catch (err) {
-      console.error('드래그 앤 드롭 처리 실패:', err);
-      loadBoardData(); // 에러 발생 시 전체 데이터 다시 로드
+    } catch (error) {
+      console.error('이슈 이동 중 오류 발생:', error);
+      // 에러 발생 시 이전 상태로 롤백
+      setIssuesByColumn(currentState);
+      setPopup({
+        type: 'result',
+        payload: { message: '이슈 이동 중 오류가 발생했습니다.' }
+      });
     }
   };
 

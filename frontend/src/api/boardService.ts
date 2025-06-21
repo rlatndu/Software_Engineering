@@ -325,13 +325,18 @@ const boardService = {
     });
   },
 
-  updateIssueStatus: async (issueId: number, status: string, columnId: number, order: number): Promise<any> => {
-    const response = await axios.patch(`${BASE_URL}/issues/${issueId}/status`, {
-      status,
-      columnId,
-      order
-    });
-    return response.data;
+  updateIssueStatus: async (issueId: number, status: string, columnId: number, order: number, projectId: number): Promise<any> => {
+    try {
+      const response = await axios.put(`${BASE_URL}/projects/${projectId}/issues/${issueId}`, {
+        status,
+        columnId,
+        order
+      });
+      return response.data;
+    } catch (error) {
+      console.error('이슈 상태 업데이트 실패:', error);
+      throw error;
+    }
   }
 };
 
