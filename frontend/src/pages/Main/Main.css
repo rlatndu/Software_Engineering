@@ -517,7 +517,7 @@ button:focus {
 .project-subtabs {
   display: flex;
   gap: 0.5rem;
-  margin-top: 1.25rem;
+  margin-top: 0;
   border-bottom: 1px solid #e5e7eb;
   padding-left: 0.5rem;
 }
@@ -873,5 +873,64 @@ button:focus {
 }
 
 .invite-button-topright .invite-button:hover {
+  background-color: #6b85d8;
+}
+
+.project-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.project-header .section-title {
+  flex: 1;
+  margin-right: 2rem;
+}
+
+.project-header .invite-button {
+  background-color: #7e9dec;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  z-index: 1;
+}
+
+.project-header .invite-button:hover {
+  background-color: #6b85d8;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+}
+
+.section-header .section-title {
+  flex: 1;
+  margin-right: 2rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.section-header .invite-button {
+  background-color: #7e9dec;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  z-index: 1;
+}
+
+.section-header .invite-button:hover {
   background-color: #6b85d8;
 }

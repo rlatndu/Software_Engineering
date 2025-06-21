@@ -8,9 +8,10 @@ interface ProjectTabProps {
   projects: Project[];
   selectedProjectIndex: number;
   setSelectedProjectIndex: (index: number) => void;
+  children?: React.ReactNode;
 }
 
-const ProjectTab: React.FC<ProjectTabProps> = ({ projects, selectedProjectIndex, setSelectedProjectIndex }) => {
+const ProjectTab: React.FC<ProjectTabProps> = ({ projects, selectedProjectIndex, setSelectedProjectIndex, children }) => {
   const [viewTab, setViewTab] = useState<'board' | 'backlog'>('board');
 
   if (projects.length === 0) {
@@ -35,6 +36,7 @@ const ProjectTab: React.FC<ProjectTabProps> = ({ projects, selectedProjectIndex,
     <div className="project-tab">
       <div className="section-header">
         <h2 className="section-title">[{selectedProject.name}]</h2>
+        {children}
       </div>
 
       <div className="project-subtabs">

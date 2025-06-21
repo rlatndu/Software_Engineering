@@ -824,19 +824,18 @@ const Main = () => {
 
           {activeTab === 'project' && (
             <>
-              <div className="invite-button-topright">
+              <ProjectTab
+                projects={projects}
+                selectedProjectIndex={selectedProjectIndex}
+                setSelectedProjectIndex={setSelectedProjectIndex}
+              >
                 <button 
                   className="invite-button"
                   onClick={() => setActiveTab('team')}
                 >
                   + 팀원 초대
                 </button>
-              </div>
-              <ProjectTab
-                projects={projects}
-                selectedProjectIndex={selectedProjectIndex}
-                setSelectedProjectIndex={setSelectedProjectIndex}
-              />
+              </ProjectTab>
             </>
           )}
 
