@@ -58,12 +58,22 @@ const SiteCreatePage = () => {
       navigate('/site');
     } catch (err: any) {
       console.error('사이트 생성 오류:', err);
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
+      if (err.response?.data) {
+        // 서버에서 오는 에러 메시지가 객체인 경우
+        if (typeof err.response.data === 'object' && err.response.data.message) {
+          setError(err.response.data.message);
+        }
+        // 서버에서 오는 에러 메시지가 문자열인 경우 (이전 버전 호환성)
+        else if (typeof err.response.data === 'string') {
+          setError(err.response.data);
+        }
+        else {
+          setError('사이트 생성에 실패했습니다. 다시 시도해주세요.');
+        }
       } else if (err.message) {
         setError(err.message);
       } else {
-        setError('사이트 생성에 실패했습니다.');
+        setError('사이트 생성에 실패했습니다. 다시 시도해주세요.');
       }
     } finally {
       setIsProcessing(false);
