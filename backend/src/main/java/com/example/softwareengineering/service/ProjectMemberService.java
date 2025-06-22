@@ -14,6 +14,7 @@ import com.example.softwareengineering.repository.SiteMemberRepository;
 import com.example.softwareengineering.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.List;
@@ -133,19 +134,24 @@ public class ProjectMemberService {
     }
 
     // 프로젝트 멤버 목록 조회
+    @Transactional(readOnly = true)
     public List<Map<String, String>> getProjectMembers(Long projectId) {
+        // 프로젝트와 멤버 정보를 한 번에 조회
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new CustomException("프로젝트 없음"));
-        
-        List<ProjectMember> members = projectMemberRepository.findByProject(project);
+            .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+
+        // 프로젝트 멤버와 사용자 정보를 JOIN으로 한 번에 조회
+        List<ProjectMember> members = projectMemberRepository.findByProjectWithUser(project);
+
         return members.stream()
-                .map(member -> {
-                    Map<String, String> memberInfo = new HashMap<>();
-                    memberInfo.put("userId", member.getUser().getUserId());
-                    memberInfo.put("name", member.getUser().getUserId());
-                    memberInfo.put("role", member.getRole().toString());
-                    return memberInfo;
-                })
-                .collect(Collectors.toList());
+            .map(member -> {
+                Map<String, String> memberInfo = new HashMap<>();
+                User user = member.getUser();
+                memberInfo.put("userId", user.getUserId());
+                memberInfo.put("email", user.getEmail());
+                memberInfo.put("role", member.getRole().toString());
+                return memberInfo;
+            })
+            .collect(Collectors.toList());
     }
 } 

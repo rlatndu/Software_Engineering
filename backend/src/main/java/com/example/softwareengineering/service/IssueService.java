@@ -60,6 +60,23 @@ public class IssueService {
         this.userIssueOrderRepository = userIssueOrderRepository;
     }
 
+    // 권한 체크를 위한 새로운 메소드
+    private boolean checkPermission(Project project, User user) {
+        // 1. 사이트 멤버 권한 확인
+        SiteMember siteMember = siteMemberRepository.findBySiteAndUser(project.getSite(), user)
+            .orElse(null);
+            
+        if (siteMember != null && siteMember.getRole() == MemberRole.ADMIN) {
+            return true;
+        }
+        
+        // 2. 프로젝트 멤버 권한 확인
+        ProjectMember projectMember = projectMemberRepository.findByProjectAndUser(project, user)
+            .orElse(null);
+            
+        return projectMember != null && projectMember.getRole() == MemberRole.PM;
+    }
+
     // 이슈 생성 (프로젝트 관리자만)
     @Transactional
     public IssueResponse createIssue(IssueCreateRequest request) {
@@ -73,41 +90,12 @@ public class IssueService {
             Project project = projectRepository.findById(request.getProjectId())
                 .orElseThrow(() -> new CustomException("프로젝트 없음"));
 
-            // 권한 체크: ADMIN 또는 PM만 이슈 생성 가능
             User reporter = userRepository.findByUserId(request.getReporterId())
                 .orElseThrow(() -> new CustomException("생성자를 찾을 수 없습니다."));
             
-            boolean hasPermission = false;
-            
-            // 1. 먼저 사이트 멤버 권한 확인
-            SiteMember siteMember = siteMemberRepository.findBySiteAndUser(project.getSite(), reporter)
-                .orElseThrow(() -> new CustomException("사이트 멤버가 아닙니다."));
-                
-            // 사이트 ADMIN이면 즉시 권한 부여
-            if (siteMember.getRole() == MemberRole.ADMIN) {
-                hasPermission = true;
-            } 
-            
-            // 2. 사이트 ADMIN이 아닌 경우 프로젝트 멤버 권한 확인
-            if (!hasPermission) {
-                try {
-                    ProjectMember projectMember = projectMemberRepository.findByProjectAndUser(project, reporter)
-                        .orElseThrow(() -> new CustomException("프로젝트 멤버가 아닙니다."));
-                    
-                    // PM인 경우 권한 부여
-                    if (projectMember.getRole() == MemberRole.PM) {
-                        hasPermission = true;
-                    }
-                } catch (Exception e) {
-                    // 프로젝트 멤버가 아닌 경우 무시하고 진행 (이미 hasPermission이 false)
-                }
-            }
-
-            if (!hasPermission) {
-                throw new CustomException(String.format(
-                    "이슈 생성 권한이 없습니다. (사이트 role: %s)", 
-                    siteMember.getRole()
-                ));
+            // 권한 체크 최적화
+            if (!checkPermission(project, reporter)) {
+                throw new CustomException("이슈 생성 권한이 없습니다.");
             }
 
             if (request.getEndDate() == null) {
@@ -224,27 +212,10 @@ public class IssueService {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new CustomException("사용자를 찾을 수 없습니다."));
             
-        // 권한 체크
-        boolean hasPermission = false;
+        // 권한 체크 최적화
+        boolean hasPermission = checkPermission(issue.getProject(), user);
         
-        // 1. 사이트 ADMIN 권한 체크 (최우선)
-        SiteMember siteMember = siteMemberRepository.findBySiteAndUser(issue.getProject().getSite(), user)
-            .orElse(null);
-        if (siteMember != null && siteMember.getRole() == MemberRole.ADMIN) {
-            hasPermission = true;
-        }
-        
-        // 2. 프로젝트 ADMIN/PM 권한 체크
-        if (!hasPermission) {
-            ProjectMember projectMember = projectMemberRepository.findByProjectAndUser(issue.getProject(), user)
-                .orElse(null);
-            if (projectMember != null && 
-                (projectMember.getRole() == MemberRole.ADMIN || projectMember.getRole() == MemberRole.PM)) {
-                hasPermission = true;
-            }
-        }
-        
-        // 3. 담당자 체크
+        // 담당자도 수정 가능
         if (!hasPermission && issue.getAssignee() != null && issue.getAssignee().getId().equals(userId)) {
             hasPermission = true;
         }
@@ -389,31 +360,14 @@ public class IssueService {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new CustomException("사용자를 찾을 수 없습니다."));
             
-        // 권한 체크
-        boolean hasPermission = false;
+        // 권한 체크 최적화
+        boolean hasPermission = checkPermission(issue.getProject(), user);
         
-        // 1. 사이트 ADMIN 권한 체크 (최우선)
-        SiteMember siteMember = siteMemberRepository.findBySiteAndUser(issue.getProject().getSite(), user)
-            .orElse(null);
-        if (siteMember != null && siteMember.getRole() == MemberRole.ADMIN) {
-            hasPermission = true;
-        }
-        
-        // 2. 프로젝트 ADMIN/PM 권한 체크
-        if (!hasPermission) {
-            ProjectMember projectMember = projectMemberRepository.findByProjectAndUser(issue.getProject(), user)
-                .orElse(null);
-            if (projectMember != null && 
-                (projectMember.getRole() == MemberRole.ADMIN || projectMember.getRole() == MemberRole.PM)) {
-                hasPermission = true;
-            }
-        }
-        
-        // 3. 담당자 체크
+        // 담당자도 삭제 가능
         if (!hasPermission && issue.getAssignee() != null && issue.getAssignee().getId().equals(userId)) {
             hasPermission = true;
         }
-        
+
         if (!hasPermission) {
             throw new CustomException("이슈를 삭제할 권한이 없습니다.");
         }

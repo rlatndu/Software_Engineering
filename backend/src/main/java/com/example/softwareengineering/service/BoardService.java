@@ -82,27 +82,40 @@ public class BoardService {
             User user = userRepository.findByUserId(userDetails.getUsername())
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
             
-            // 1. 프로젝트 존재 확인
+            // 1. 프로젝트 존재 확인 및 컬럼 조회를 한 번에 수행
             Project project = projectRepository.findById(projectId)
-                    .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
 
-            // 2. 프로젝트의 활성화된 칼럼 목록 조회
+            // 2. 프로젝트의 모든 활성화된 컬럼과 이슈를 한 번에 조회
             List<BoardColumn> columns = columnRepository.findByProjectAndIsActiveTrueOrderByOrderIndexAsc(project);
-            log.debug("조회된 칼럼 수: {}", columns.size());
-
-            // 3. 각 칼럼별 이슈 목록 조회
+            List<Issue> allIssues = issueRepository.findByProjectAndIsActiveTrue(project);
+            
+            // 3. 사용자의 모든 이슈 순서 정보를 한 번에 조회
+            List<UserIssueOrder> allUserOrders = userIssueOrderRepository.findByUserIdAndProjectOrderByOrderIndexAsc(user.getUserId(), project);
+            
+            // 4. 컬럼별로 이슈 매핑
             Map<String, List<Map<String, Object>>> issuesByColumn = new HashMap<>();
-
-            for (BoardColumn column : columns) {
-                // 사용자별 순서 정보 조회
-                List<UserIssueOrder> userOrders = userIssueOrderRepository.findByUserIdAndColumnOrderByOrderIndexAsc(user.getUserId(), column);
-                List<Issue> issues;
+            Map<Long, List<Issue>> issuesByColumnId = allIssues.stream()
+                .collect(Collectors.groupingBy(issue -> issue.getColumn().getId()));
                 
-                if (userOrders.isEmpty()) {
-                    // 사용자별 순서가 없는 경우, 생성일자 순으로 정렬하여 새로운 순서 생성
-                    issues = issueRepository.findByColumnAndIsActiveTrueOrderByCreatedAtAsc(column);
+            for (BoardColumn column : columns) {
+                List<Issue> columnIssues = issuesByColumnId.getOrDefault(column.getId(), new ArrayList<>());
+                List<Map<String, Object>> issueList = new ArrayList<>();
+                
+                // 해당 컬럼의 사용자 순서 정보 필터링
+                Map<Long, Integer> issueOrders = allUserOrders.stream()
+                    .filter(uo -> uo.getColumn().getId().equals(column.getId()))
+                    .collect(Collectors.toMap(
+                        uo -> uo.getIssue().getId(),
+                        UserIssueOrder::getOrderIndex
+                    ));
+                    
+                // 순서 정보가 없는 경우 새로 생성
+                if (issueOrders.isEmpty() && !columnIssues.isEmpty()) {
                     int order = 0;
-                    for (Issue issue : issues) {
+                    List<UserIssueOrder> newOrders = new ArrayList<>();
+                    
+                    for (Issue issue : columnIssues) {
                         UserIssueOrder userOrder = UserIssueOrder.builder()
                             .user(user)
                             .issue(issue)
@@ -110,49 +123,32 @@ public class BoardService {
                             .column(column)
                             .orderIndex(order++)
                             .build();
-                        userIssueOrderRepository.save(userOrder);
+                        newOrders.add(userOrder);
+                        issueOrders.put(issue.getId(), userOrder.getOrderIndex());
                     }
-                    // 새로 생성된 순서 조회
-                    userOrders = userIssueOrderRepository.findByUserIdAndColumnOrderByOrderIndexAsc(user.getUserId(), column);
+                    
+                    userIssueOrderRepository.saveAll(newOrders);
                 }
                 
-                // 사용자별 순서대로 이슈 목록 생성
-                final List<UserIssueOrder> finalUserOrders = userOrders;
-                issues = finalUserOrders.stream()
-                    .map(UserIssueOrder::getIssue)
-                    .collect(Collectors.toList());
+                // 이슈 정보 변환
+                for (Issue issue : columnIssues) {
+                    Map<String, Object> issueMap = new HashMap<>();
+                    issueMap.put("id", issue.getId());
+                    issueMap.put("title", issue.getTitle());
+                    issueMap.put("description", issue.getDescription());
+                    issueMap.put("status", issue.getStatus().toString());
+                    issueMap.put("startDate", issue.getStartDate());
+                    issueMap.put("endDate", issue.getEndDate());
+                    issueMap.put("assigneeId", issue.getAssignee() != null ? issue.getAssignee().getUserId() : null);
+                    issueMap.put("reporterId", issue.getReporter() != null ? issue.getReporter().getUserId() : null);
+                    issueMap.put("columnId", issue.getColumn().getId());
+                    issueMap.put("order", issueOrders.getOrDefault(issue.getId(), 0));
+                    
+                    issueList.add(issueMap);
+                }
                 
-                List<Map<String, Object>> issueList = issues.stream()
-                        .map(issue -> {
-                            Map<String, Object> issueMap = new HashMap<>();
-                            issueMap.put("id", issue.getId());
-                            issueMap.put("title", issue.getTitle());
-                            issueMap.put("description", issue.getDescription());
-                            issueMap.put("status", issue.getStatus().toString());
-                            issueMap.put("startDate", issue.getStartDate());
-                            issueMap.put("endDate", issue.getEndDate());
-                            if (issue.getAssignee() != null) {
-                                issueMap.put("assigneeId", issue.getAssignee().getUserId());
-                            } else {
-                                issueMap.put("assigneeId", null);
-                            }
-                            if (issue.getReporter() != null) {
-                                issueMap.put("reporterId", issue.getReporter().getUserId());
-                            } else {
-                                issueMap.put("reporterId", null);
-                            }
-                            issueMap.put("columnId", issue.getColumn().getId());
-                            // 현재 사용자의 순서 가져오기
-                            Integer orderIndex = finalUserOrders.stream()
-                                .filter(uo -> uo.getIssue().getId().equals(issue.getId()))
-                                .findFirst()
-                                .map(UserIssueOrder::getOrderIndex)
-                                .orElse(0);
-                            issueMap.put("order", orderIndex);
-                            return issueMap;
-                        })
-                        .collect(Collectors.toList());
-
+                // 순서대로 정렬
+                issueList.sort((a, b) -> (Integer)a.get("order") - (Integer)b.get("order"));
                 issuesByColumn.put(column.getId().toString(), issueList);
             }
 

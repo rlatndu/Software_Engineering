@@ -69,21 +69,23 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
     }
   }, [user, project]);
 
-  // 프로젝트 진입 시 최초 1회만 권한 체크
   useEffect(() => {
-    const checkProjectPermission = async () => {
-      if (!user || permissionChecked) return;
+    const initializeBoard = async () => {
+      if (!user) return;
       
       try {
         setLoading(true);
+        setError(null);
         
-        // 사이트 및 프로젝트 권한 업데이트
-        await updateUserRoles(project.siteId, project.id);
+        // 모든 데이터를 병렬로 로드
+        const [members, columnsData, issuesData] = await Promise.all([
+          projectService.getProjectMembers(project.id),
+          boardService.getColumns(project.id),
+          boardService.getIssues(project.id),
+          updateUserRoles(project.siteId, project.id)
+        ]);
         
-        // 프로젝트 멤버 정보 가져오기
-        const members = await projectService.getProjectMembers(project.id);
         const userMember = members.find(member => member.userId === user.userId);
-        
         if (!userMember) {
           setPopup({
             type: 'accessDenied',
@@ -93,314 +95,32 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
         }
 
         setPermissionChecked(true);
-      } catch (error) {
-        console.error('프로젝트 권한 체크 실패:', error);
-        setPopup({
-          type: 'accessDenied',
-          payload: { message: '프로젝트 접근 권한을 확인할 수 없습니다.' }
+
+        // 컬럼과 이슈 데이터 설정
+        if (columnsData && columnsData.length > 0) {
+          const sortedColumns = [...columnsData].sort((a, b) => a.order - b.order);
+          setColumns(sortedColumns);
+        }
+
+        const initialIssuesByColumn: { [key: number]: BoardIssue[] } = {};
+        columnsData.forEach(col => {
+          initialIssuesByColumn[col.id] = issuesData[col.id] || [];
         });
+
+        setIssuesByColumn(initialIssuesByColumn);
+        
+      } catch (err) {
+        console.error('보드 초기화 실패:', err);
+        setError('데이터를 불러오는데 실패했습니다.');
       } finally {
         setLoading(false);
       }
     };
 
-    checkProjectPermission();
+    initializeBoard();
   }, [project.id, project.siteId, user]);
 
-  const loadBoardData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // 컬럼과 이슈 데이터를 동시에 불러옴
-      const [columnsData, issuesData] = await Promise.all([
-        boardService.getColumns(project.id),
-        boardService.getIssues(project.id)
-      ]);
-
-      console.log('Loaded columns:', columnsData);
-      console.log('Loaded issues:', issuesData);
-
-      // 컬럼 데이터 설정
-      if (columnsData && columnsData.length > 0) {
-        // 컬럼을 order 기준으로 정렬
-        const sortedColumns = [...columnsData].sort((a, b) => a.order - b.order);
-        console.log('Sorted columns:', sortedColumns);
-        setColumns(sortedColumns);
-      }
-
-      // 이슈 데이터 설정
-      const initialIssuesByColumn: { [key: number]: BoardIssue[] } = {};
-      columnsData.forEach(col => {
-        initialIssuesByColumn[col.id] = issuesData[col.id] || [];
-      });
-
-      console.log('Setting issues by column:', initialIssuesByColumn);
-      setIssuesByColumn(initialIssuesByColumn);
-    } catch (err) {
-      console.error('보드 데이터 로딩 실패:', err);
-      setError('데이터를 불러오는데 실패했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadBoardData();
-  }, [project.id]);
-
-  const handleEdit = async (issue: BoardIssue) => {
-    if (!canManageIssues(user, project)) {
-      setPopup({
-        type: 'accessDenied',
-        payload: { message: '이슈를 수정할 권한이 없습니다.' }
-      });
-      return;
-    }
-
-    setMenuOpenIssue(null);
-    try {
-      const updatedIssue = await boardService.updateIssue(issue.id, issue);
-      setIssuesByColumn(prev => {
-        const updated = { ...prev };
-        for (const colId in updated) {
-          updated[colId] = updated[colId].map(i =>
-            i.id === updatedIssue.id ? updatedIssue : i
-          );
-        }
-        return updated;
-      });
-      
-      // 약간의 지연 후 성공 팝업 표시
-      setTimeout(() => {
-        setPopup({ type: 'result', payload: { message: '수정되었습니다.' } });
-      }, 100);
-    } catch (err) {
-      setPopup({
-        type: 'accessDenied',
-        payload: { message: '이슈 수정에 실패했습니다.' }
-      });
-    }
-  };
-
-  const handleDelete = (issue: BoardIssue) => {
-    setMenuOpenIssue(null);
-    setPopup({ 
-      type: 'confirmDelete', 
-      payload: { 
-        title: issue.title,
-        id: issue.id 
-      } 
-    });
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!popup.payload?.id) return;
-
-    try {
-      await boardService.deleteIssue(popup.payload.id, project.id);
-      setPopup({ type: 'result', payload: { message: '이슈가 삭제되었습니다.' } });
-      // 이슈 목록 새로고침
-      loadBoardData();
-    } catch (error) {
-      console.error('이슈 삭제 실패:', error);
-      setPopup({ type: 'result', payload: { message: '이슈 삭제에 실패했습니다.' } });
-    }
-  };
-
-  const handleCreateIssue = async (columnId: number, issueData: Partial<BoardIssue>) => {
-    if (!canCreateIssue(user, project)) {
-      setPopup({
-        type: 'accessDenied',
-        payload: { message: '이슈를 생성할 권한이 없습니다.' }
-      });
-      return Promise.reject(new Error('이슈를 생성할 권한이 없습니다. PM 또는 관리자만 이슈를 생성할 수 있습니다.'));
-    }
-
-    try {
-      // 상태에 맞는 칼럼 찾기
-      const normalizedStatus = issueData.status?.replace(/[_\s]/g, '').toUpperCase();
-      const targetColumn = columns.find(col => 
-        col.title.replace(/[_\s]/g, '').toUpperCase() === normalizedStatus
-      );
-
-      // 상태에 맞는 칼럼을 찾지 못한 경우 선택된 칼럼 사용
-      const targetColumnId = targetColumn ? targetColumn.id : columnId;
-
-      const createData = {
-        ...issueData,
-        columnId: targetColumnId,
-        projectId: project.id,
-        reporterId: user?.userId,
-        startDate: issueData.startDate || new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString(),
-        endDate: issueData.endDate || new Date(new Date().setHours(23, 59, 59, 999) - new Date().getTimezoneOffset() * 60000).toISOString()
-      };
-
-      console.log('Creating issue with data:', createData);
-      const newIssue = await boardService.createIssue(project.id, targetColumnId, createData);
-      console.log('Created new issue:', newIssue);
-
-      // 새로운 이슈를 해당하는 상태의 칼럼에 추가
-      setIssuesByColumn(prev => ({
-        ...prev,
-        [targetColumnId]: [...(prev[targetColumnId] || []), { 
-          ...newIssue, 
-          columnId: targetColumnId,
-          order: prev[targetColumnId] ? prev[targetColumnId].length : 0 // 해당 칼럼의 마지막 순서로 설정
-        }]
-      }));
-
-      setIsCreateModalOpen(false);
-      // 약간의 지연 후 성공 팝업 표시
-      setTimeout(() => {
-        setPopup({ type: 'result', payload: { message: '이슈가 생성되었습니다.' } });
-      }, 100);
-
-      return { id: newIssue.id };
-    } catch (err) {
-      console.error('이슈 생성 실패:', err);
-      setPopup({
-        type: 'accessDenied',
-        payload: { message: '이슈 생성에 실패했습니다. 서버 오류가 발생했습니다.' }
-      });
-      throw err;
-    }
-  };
-
-  const handleDragEnd = async (result: DropResult) => {
-    const { source, destination } = result;
-    if (!destination) return;
-
-    const sourceColId = parseInt(source.droppableId);
-    const destColId = parseInt(destination.droppableId);
-    
-    // 현재 상태 백업
-    const currentState = { ...issuesByColumn };
-    
-    try {
-      // 이동할 이슈 찾기
-      const sourceIssues = [...issuesByColumn[sourceColId]];
-      const [movedIssue] = sourceIssues.splice(source.index, 1);
-
-      if (sourceColId === destColId) {
-        // 같은 칼럼 내 이동
-        // 프로젝트 멤버 여부만 확인 (이미 캐시된 상태 사용)
-        if (!user || !user.roles.projectRoles[project.id]) {
-          setPopup({
-            type: 'accessDenied',
-            payload: { message: '이슈를 이동할 권한이 없습니다. 프로젝트 멤버만 이슈를 이동할 수 있습니다.' }
-          });
-          return;
-        }
-
-        // UI 업데이트
-        sourceIssues.splice(destination.index, 0, movedIssue);
-        setIssuesByColumn({ ...issuesByColumn, [sourceColId]: sourceIssues });
-
-        // 사용자별 순서 업데이트 - 1000 단위로 간격을 두어 중간 삽입 용이하게 함
-        try {
-          const validIssues = sourceIssues.filter(issue => issue && issue.id);
-          if (validIssues.length !== sourceIssues.length) {
-            console.error('Invalid issues found:', sourceIssues);
-            throw new Error('유효하지 않은 이슈가 포함되어 있습니다.');
-          }
-          
-          const orderUpdates = validIssues.map((issue, index) => ({
-          issueId: issue.id,
-          order: (index + 1) * 1000
-        }));
-
-        // 순서 업데이트 API 호출 - 사용자별 순서 저장
-          if (user && orderUpdates.length > 0) {
-          await projectService.updateIssueOrders(project.id, orderUpdates, user.id);
-          }
-        } catch (error) {
-          console.error('이슈 순서 업데이트 실패:', error);
-          throw error;
-        }
-      } else {
-        // 다른 칼럼으로 이동
-        const isAssignee = movedIssue.assigneeId ? Number(movedIssue.assigneeId) === user?.id : false;
-        if (!canMoveBetween && !isAssignee) {
-          setPopup({
-            type: 'accessDenied',
-            payload: { message: '이슈를 다른 칼럼으로 이동할 권한이 없습니다. 프로젝트 관리자, 프로젝트 PM, 또는 해당 이슈의 담당자만 가능합니다.' }
-          });
-          return;
-        }
-
-        const destIssues = [...(issuesByColumn[destColId] || [])];
-        destIssues.splice(destination.index, 0, movedIssue);
-        
-        // UI 상태 업데이트
-        const newIssuesByColumn = {
-          ...issuesByColumn,
-          [sourceColId]: sourceIssues,
-          [destColId]: destIssues
-        };
-        setIssuesByColumn(newIssuesByColumn);
-
-        // 이슈 상태 업데이트
-        const column = columns.find(col => col.id === destColId);
-        if (!column) throw new Error('칼럼을 찾을 수 없습니다.');
-
-        // 출발지와 도착지 칼럼의 순서 모두 업데이트 - 사용자별 순서 저장
-        const sourceOrderUpdates = sourceIssues.map((issue, index) => ({
-          issueId: issue.id,
-          order: (index + 1) * 1000
-        }));
-
-        const destOrderUpdates = destIssues.map((issue, index) => ({
-          issueId: issue.id,
-          order: (index + 1) * 1000
-        }));
-
-        if (user) {
-          // 순서 업데이트 API 호출 - 사용자별 순서 저장
-          await projectService.updateIssueOrders(project.id, [...sourceOrderUpdates, ...destOrderUpdates], user.id);
-
-          // 이슈 정보 업데이트 (상태 변경)
-          await projectService.updateIssue(project.id, movedIssue.id, {
-            title: movedIssue.title,
-            description: movedIssue.description || '',
-            status: getStatusFromColumnTitle(column.title),
-            startDate: movedIssue.startDate,
-            endDate: movedIssue.endDate,
-            assigneeId: movedIssue.assigneeId || ''
-          });
-        }
-      }
-    } catch (error) {
-      console.error('이슈 이동 중 오류 발생:', error);
-      // 에러 발생 시 이전 상태로 롤백
-      setIssuesByColumn(currentState);
-      setPopup({
-        type: 'result',
-        payload: { message: '이슈 이동 중 오류가 발생했습니다.' }
-      });
-    }
-  };
-
-  const getStatusFromColumnTitle = (columnTitle: string): string => {
-    const title = columnTitle.toLowerCase();
-    switch (title) {
-      case 'to do':
-      case '할 일':
-        return 'TODO';
-      case 'in progress':
-      case '진행 중':
-        return 'IN_PROGRESS';
-      case 'done':
-      case '완료':
-        return 'DONE';
-      case 'hold':
-      case '보류':
-        return 'HOLD';
-      default:
-        return columnTitle.toUpperCase().replace(/\s+/g, '_');
-    }
-  };
-
+  // 권한 캐시 상태 업데이트
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (issueDropdownRef.current && !issueDropdownRef.current.contains(event.target as Node)) {
@@ -513,6 +233,252 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const handleEdit = async (issue: BoardIssue) => {
+    if (!canManageIssues(user, project)) {
+      setPopup({
+        type: 'accessDenied',
+        payload: { message: '이슈를 수정할 권한이 없습니다.' }
+      });
+      return;
+    }
+
+    setMenuOpenIssue(null);
+    try {
+      const updatedIssue = await boardService.updateIssue(issue.id, issue);
+      setIssuesByColumn(prev => {
+        const updated = { ...prev };
+        for (const colId in updated) {
+          updated[colId] = updated[colId].map(i =>
+            i.id === updatedIssue.id ? updatedIssue : i
+          );
+        }
+        return updated;
+      });
+      
+      setTimeout(() => {
+        setPopup({ type: 'result', payload: { message: '수정되었습니다.' } });
+      }, 100);
+    } catch (err) {
+      setPopup({
+        type: 'accessDenied',
+        payload: { message: '이슈 수정에 실패했습니다.' }
+      });
+    }
+  };
+
+  const handleDelete = (issue: BoardIssue) => {
+    setMenuOpenIssue(null);
+    setPopup({ 
+      type: 'confirmDelete', 
+      payload: { 
+        title: issue.title,
+        id: issue.id 
+      } 
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!popup.payload?.id) return;
+
+    try {
+      await boardService.deleteIssue(popup.payload.id, project.id);
+      setPopup({ type: 'result', payload: { message: '이슈가 삭제되었습니다.' } });
+      
+      // 이슈 목록 새로고침
+      const [columnsData, issuesData] = await Promise.all([
+        boardService.getColumns(project.id),
+        boardService.getIssues(project.id)
+      ]);
+
+      if (columnsData && columnsData.length > 0) {
+        const sortedColumns = [...columnsData].sort((a, b) => a.order - b.order);
+        setColumns(sortedColumns);
+      }
+
+      const initialIssuesByColumn: { [key: number]: BoardIssue[] } = {};
+      columnsData.forEach(col => {
+        initialIssuesByColumn[col.id] = issuesData[col.id] || [];
+      });
+
+      setIssuesByColumn(initialIssuesByColumn);
+    } catch (error) {
+      console.error('이슈 삭제 실패:', error);
+      setPopup({ type: 'result', payload: { message: '이슈 삭제에 실패했습니다.' } });
+    }
+  };
+
+  const handleCreateIssue = async (columnId: number, issueData: Partial<BoardIssue>) => {
+    if (!canCreateIssue(user, project)) {
+      setPopup({
+        type: 'accessDenied',
+        payload: { message: '이슈를 생성할 권한이 없습니다.' }
+      });
+      return Promise.reject(new Error('이슈를 생성할 권한이 없습니다. PM 또는 관리자만 이슈를 생성할 수 있습니다.'));
+    }
+
+    try {
+      const normalizedStatus = issueData.status?.replace(/[_\s]/g, '').toUpperCase();
+      const targetColumn = columns.find(col => 
+        col.title.replace(/[_\s]/g, '').toUpperCase() === normalizedStatus
+      );
+
+      const targetColumnId = targetColumn ? targetColumn.id : columnId;
+
+      const createData = {
+        ...issueData,
+        columnId: targetColumnId,
+        projectId: project.id,
+        reporterId: user?.userId,
+        startDate: issueData.startDate || new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString(),
+        endDate: issueData.endDate || new Date(new Date().setHours(23, 59, 59, 999) - new Date().getTimezoneOffset() * 60000).toISOString()
+      };
+
+      const newIssue = await boardService.createIssue(project.id, targetColumnId, createData);
+
+      setIssuesByColumn(prev => ({
+        ...prev,
+        [targetColumnId]: [...(prev[targetColumnId] || []), { 
+          ...newIssue, 
+          columnId: targetColumnId,
+          order: prev[targetColumnId] ? prev[targetColumnId].length : 0
+        }]
+      }));
+
+      setIsCreateModalOpen(false);
+      setTimeout(() => {
+        setPopup({ type: 'result', payload: { message: '이슈가 생성되었습니다.' } });
+      }, 100);
+
+      return { id: newIssue.id };
+    } catch (err) {
+      console.error('이슈 생성 실패:', err);
+      setPopup({
+        type: 'accessDenied',
+        payload: { message: '이슈 생성에 실패했습니다. 서버 오류가 발생했습니다.' }
+      });
+      throw err;
+    }
+  };
+
+  const handleDragEnd = async (result: DropResult) => {
+    const { source, destination } = result;
+    if (!destination) return;
+
+    const sourceColId = parseInt(source.droppableId);
+    const destColId = parseInt(destination.droppableId);
+    
+    const currentState = { ...issuesByColumn };
+    
+    try {
+      const sourceIssues = [...issuesByColumn[sourceColId]];
+      const [movedIssue] = sourceIssues.splice(source.index, 1);
+
+      if (sourceColId === destColId) {
+        if (!user || !user.roles.projectRoles[project.id]) {
+          setPopup({
+            type: 'accessDenied',
+            payload: { message: '이슈를 이동할 권한이 없습니다. 프로젝트 멤버만 이슈를 이동할 수 있습니다.' }
+          });
+          return;
+        }
+
+        sourceIssues.splice(destination.index, 0, movedIssue);
+        setIssuesByColumn({ ...issuesByColumn, [sourceColId]: sourceIssues });
+
+        try {
+          const validIssues = sourceIssues.filter(issue => issue && issue.id);
+          if (validIssues.length !== sourceIssues.length) {
+            throw new Error('유효하지 않은 이슈가 포함되어 있습니다.');
+          }
+          
+          const orderUpdates = validIssues.map((issue, index) => ({
+            issueId: issue.id,
+            order: (index + 1) * 1000
+          }));
+
+          if (user && orderUpdates.length > 0) {
+            await projectService.updateIssueOrders(project.id, orderUpdates, user.id);
+          }
+        } catch (error) {
+          console.error('이슈 순서 업데이트 실패:', error);
+          throw error;
+        }
+      } else {
+        const isAssignee = movedIssue.assigneeId ? Number(movedIssue.assigneeId) === user?.id : false;
+        if (!canMoveBetween && !isAssignee) {
+          setPopup({
+            type: 'accessDenied',
+            payload: { message: '이슈를 다른 칼럼으로 이동할 권한이 없습니다. 프로젝트 관리자, 프로젝트 PM, 또는 해당 이슈의 담당자만 가능합니다.' }
+          });
+          return;
+        }
+
+        const destIssues = [...(issuesByColumn[destColId] || [])];
+        destIssues.splice(destination.index, 0, movedIssue);
+        
+        const newIssuesByColumn = {
+          ...issuesByColumn,
+          [sourceColId]: sourceIssues,
+          [destColId]: destIssues
+        };
+        setIssuesByColumn(newIssuesByColumn);
+
+        const column = columns.find(col => col.id === destColId);
+        if (!column) throw new Error('칼럼을 찾을 수 없습니다.');
+
+        const sourceOrderUpdates = sourceIssues.map((issue, index) => ({
+          issueId: issue.id,
+          order: (index + 1) * 1000
+        }));
+
+        const destOrderUpdates = destIssues.map((issue, index) => ({
+          issueId: issue.id,
+          order: (index + 1) * 1000
+        }));
+
+        if (user) {
+          await projectService.updateIssueOrders(project.id, [...sourceOrderUpdates, ...destOrderUpdates], user.id);
+
+          await projectService.updateIssue(project.id, movedIssue.id, {
+            title: movedIssue.title,
+            description: movedIssue.description || '',
+            status: getStatusFromColumnTitle(column.title),
+            startDate: movedIssue.startDate,
+            endDate: movedIssue.endDate,
+            assigneeId: movedIssue.assigneeId || ''
+          });
+        }
+      }
+    } catch (error) {
+      console.error('이슈 이동 중 오류 발생:', error);
+      setIssuesByColumn(currentState);
+      setPopup({
+        type: 'result',
+        payload: { message: '이슈 이동 중 오류가 발생했습니다.' }
+      });
+    }
+  };
+
+  const getStatusFromColumnTitle = (columnTitle: string): string => {
+    const title = columnTitle.toLowerCase();
+    switch (title) {
+      case 'to do':
+      case '할 일':
+        return 'TODO';
+      case 'in progress':
+      case '진행 중':
+        return 'IN_PROGRESS';
+      case 'done':
+      case '완료':
+        return 'DONE';
+      case 'hold':
+      case '보류':
+        return 'HOLD';
+      default:
+        return columnTitle.toUpperCase().replace(/\s+/g, '_');
+    }
+  };
 
   if (loading) {
     return <div className="loading">로딩 중...</div>;

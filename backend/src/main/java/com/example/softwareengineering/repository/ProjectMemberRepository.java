@@ -6,6 +6,7 @@ import com.example.softwareengineering.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -20,4 +21,7 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Lo
     @Modifying
     @Query("DELETE FROM ProjectMember pm WHERE pm.project = :project")
     void deleteByProject(Project project);
+
+    @Query("SELECT pm FROM ProjectMember pm JOIN FETCH pm.user WHERE pm.project = :project")
+    List<ProjectMember> findByProjectWithUser(@Param("project") Project project);
 } 
