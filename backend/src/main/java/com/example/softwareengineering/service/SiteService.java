@@ -6,23 +6,18 @@ import com.example.softwareengineering.entity.SiteMember;
 import com.example.softwareengineering.entity.MemberRole;
 import com.example.softwareengineering.entity.Project;
 import com.example.softwareengineering.entity.RecentSiteVisit;
-import com.example.softwareengineering.repository.SiteRepository;
-import com.example.softwareengineering.repository.SiteMemberRepository;
-import com.example.softwareengineering.repository.ProjectRepository;
-import com.example.softwareengineering.repository.IssueRepository;
-import com.example.softwareengineering.repository.BoardColumnRepository;
-import com.example.softwareengineering.repository.ProjectMemberRepository;
-import com.example.softwareengineering.repository.UserRepository;
-import com.example.softwareengineering.repository.RecentSiteVisitRepository;
+import com.example.softwareengineering.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SiteService {
@@ -34,7 +29,14 @@ public class SiteService {
     private final ProjectMemberRepository projectMemberRepository;
     private final UserRepository userRepository;
     private final RecentSiteVisitRepository recentSiteVisitRepository;
+    private final RecentProjectVisitRepository recentProjectVisitRepository;
+    private final ActivityLogRepository activityLogRepository;
+    private final InvitationRepository invitationRepository;
+    private final NotificationRepository notificationRepository;
+    private final IssueCommentRepository issueCommentRepository;
+    private final IssueFileRepository issueFileRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserIssueOrderRepository userIssueOrderRepository;
 
     @Transactional
     public Site createSite(String name, User owner) {
@@ -104,10 +106,13 @@ public class SiteService {
 
     @Transactional
     public void deleteSite(Long siteId, User user) {
+        log.info("사이트 {} 삭제 시작", siteId);
+
+        // 1. 사이트 존재 여부 확인
         Site site = siteRepository.findById(siteId)
                 .orElseThrow(() -> new IllegalArgumentException("사이트를 찾을 수 없습니다."));
 
-        // 사이트 소유자 또는 ADMIN 권한을 가진 멤버인지 확인
+        // 2. 권한 확인 (사이트 소유자 또는 ADMIN)
         SiteMember member = siteMemberRepository.findBySiteAndUser(site, user)
                 .orElseThrow(() -> new IllegalArgumentException("권한이 없습니다."));
 
@@ -116,29 +121,60 @@ public class SiteService {
         }
 
         try {
-            // 1. 프로젝트 관련 데이터 삭제
+            // 3. 활동 로그 삭제
+            log.debug("활동 로그 삭제 시작");
+            activityLogRepository.deleteBySiteId(siteId);
+
+            // 4. 초대 기록 삭제
+            log.debug("초대 기록 삭제 시작");
+            invitationRepository.deleteBySite(site);
+
+            // 5. 최근 방문 기록 삭제
+            log.debug("최근 방문 기록 삭제 시작");
+            recentSiteVisitRepository.deleteBySite(site);
+            recentProjectVisitRepository.deleteByProjectSiteId(siteId);
+
+            // 6. 알림 삭제
+            log.debug("알림 삭제 시작");
+            notificationRepository.deleteBySiteId(siteId);
+
+            // 7. 프로젝트 관련 데이터 삭제
+            log.debug("프로젝트 관련 데이터 삭제 시작");
             List<Project> projects = projectRepository.findBySite(site);
             for (Project project : projects) {
-                // 1-1. 이슈 삭제
+                log.debug("프로젝트 {} 의 이슈 관련 데이터 삭제", project.getId());
+                
+                // 7-1. 이슈 관련 데이터 삭제
+                // user_issue_orders 먼저 삭제
+                userIssueOrderRepository.deleteByProjectId(project.getId());
+                
+                // 그 다음 이슈 관련 데이터 삭제
+                issueCommentRepository.deleteByProjectId(project.getId());
+                issueFileRepository.deleteByProjectId(project.getId());
                 issueRepository.deleteByProject(project);
-                
-                // 1-2. 보드 컬럼 삭제
+
+                // 7-2. 보드 컬럼 삭제
+                log.debug("프로젝트 {} 의 보드 컬럼 삭제", project.getId());
                 boardColumnRepository.deleteByProject(project);
-                
-                // 1-3. 프로젝트 멤버 삭제
+
+                // 7-3. 프로젝트 멤버 삭제
+                log.debug("프로젝트 {} 의 멤버 삭제", project.getId());
                 projectMemberRepository.deleteByProject(project);
             }
 
-            // 2. 프로젝트 삭제
+            // 8. 프로젝트 삭제
             projectRepository.deleteBySite(site);
-            
-            // 3. 사이트 멤버 삭제
+
+            // 9. 사이트 멤버 삭제
             siteMemberRepository.deleteBySite(site);
-            
-            // 4. 사이트 삭제
+
+            // 10. 사이트 삭제
             siteRepository.delete(site);
+
+            log.info("사이트 {} 삭제 완료", siteId);
         } catch (Exception e) {
-            throw new RuntimeException("사이트 삭제에 실패했습니다: " + e.getMessage(), e);
+            log.error("사이트 {} 삭제 중 오류 발생: {}", siteId, e.getMessage());
+            throw new RuntimeException("사이트 삭제 중 오류가 발생했습니다.", e);
         }
     }
 

@@ -4,6 +4,7 @@ import com.example.softwareengineering.entity.ActivityLog;
 import com.example.softwareengineering.entity.Project;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -62,4 +63,8 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long> 
     );
     
     void deleteByTimestampBefore(LocalDateTime timestamp);
+
+    @Modifying
+    @Query("DELETE FROM ActivityLog a WHERE a.project.site.id = :siteId")
+    void deleteBySiteId(Long siteId);
 } 

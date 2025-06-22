@@ -4,6 +4,7 @@ import com.example.softwareengineering.entity.RecentProjectVisit;
 import com.example.softwareengineering.entity.Project;
 import com.example.softwareengineering.entity.Site;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -30,4 +31,12 @@ public interface RecentProjectVisitRepository extends JpaRepository<RecentProjec
            "AND rpv.user.id = :userId " +
            "ORDER BY rpv.visitedAt DESC")
     List<RecentProjectVisit> findByUserAndSite(@Param("userId") Long userId, @Param("siteId") Long siteId);
+
+    @Modifying
+    @Query("DELETE FROM RecentProjectVisit rpv WHERE rpv.project.site.id = :siteId")
+    void deleteBySiteId(Long siteId);
+
+    @Modifying
+    @Query("DELETE FROM RecentProjectVisit rpv WHERE rpv.project.site.id = :siteId")
+    void deleteByProjectSiteId(Long siteId);
 } 

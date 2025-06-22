@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.Modifying;
 
 import java.util.List;
 import java.util.Optional;
@@ -40,4 +41,8 @@ public interface UserIssueOrderRepository extends JpaRepository<UserIssueOrder, 
     
     @Query("DELETE FROM UserIssueOrder uo WHERE uo.project = :project")
     void deleteByProject(@Param("project") Project project);
+
+    @Modifying
+    @Query("DELETE FROM UserIssueOrder uio WHERE uio.project.id = :projectId")
+    void deleteByProjectId(Long projectId);
 } 
