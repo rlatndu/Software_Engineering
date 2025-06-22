@@ -113,8 +113,8 @@ public class IssueService {
             if (request.getEndDate() == null) {
                 throw new CustomException("마감일(종료일)은 필수입니다.");
             }
-            if (!List.of("TODO", "IN_PROGRESS", "DONE").contains(request.getStatus())) {
-                throw new CustomException("status는 TODO, IN_PROGRESS, DONE만 가능합니다.");
+            if (!List.of("TODO", "IN_PROGRESS", "DONE", "HOLD").contains(request.getStatus())) {
+                throw new CustomException("status는 TODO, IN_PROGRESS, DONE, HOLD만 가능합니다.");
             }
 
             // 컬럼 찾기
@@ -281,6 +281,8 @@ public class IssueService {
                     statusName = "In Progress";
                 } else if (statusName.equals("DONE")) {
                     statusName = "Done";
+                } else if (statusName.equals("HOLD")) {
+                    statusName = "Hold";
                 }
                 
                 for (BoardColumn col : columns) {

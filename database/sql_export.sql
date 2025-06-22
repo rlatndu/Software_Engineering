@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 8.0.41, for Win64 (x86_64)
 --
--- Host: localhost    Database: team_6
+-- Host: localhost    Database: team_9
 -- ------------------------------------------------------
 -- Server version	8.0.41
 
@@ -141,7 +141,7 @@ CREATE TABLE `issues` (
   `project_id` int NOT NULL,
   `title` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
   `description` text COLLATE utf8mb4_general_ci,
-  `status` enum('TODO','IN_PROGRESS','DONE') COLLATE utf8mb4_general_ci DEFAULT 'TODO',
+  `status` enum('TODO','IN_PROGRESS','DONE','HOLD') COLLATE utf8mb4_general_ci DEFAULT 'TODO',
   `priority` int DEFAULT '0',
   `start_date` date DEFAULT NULL,
   `end_date` date DEFAULT NULL,

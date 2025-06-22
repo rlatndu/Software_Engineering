@@ -560,6 +560,9 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
       case 'done':
       case '완료':
         return 'DONE';
+      case 'hold':
+      case '보류':
+        return 'HOLD';
       default:
         return columnTitle.toUpperCase().replace(/\s+/g, '_');
     }
@@ -685,6 +688,26 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const getColumnIcon = (columnTitle: string): string => {
+    const title = columnTitle.toLowerCase();
+    switch (title) {
+      case 'to do':
+      case '할 일':
+        return '/assets/todo.png';
+      case 'in progress':
+      case '진행 중':
+        return '/assets/inprogress.png';
+      case 'done':
+      case '완료':
+        return '/assets/done.png';
+      case 'hold':
+      case '보류':
+        return '/assets/hold.png';
+      default:
+        return '/assets/custom-column.png';
+    }
+  };
+
   if (loading) {
     return <div className="loading">로딩 중...</div>;
   }
@@ -699,7 +722,7 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
               <div className="board-header">
                 <div className="board-title">
                   <span>{col.title}</span>
-                  <img src={col.icon} alt={col.title} className="column-icon" />
+                  <img src={getColumnIcon(col.title)} alt={col.title} className="column-icon" />
                 </div>
                 <div className="menu-container">
                   <button className="add-button" onClick={() => toggleColumnMenu(col.id)}>

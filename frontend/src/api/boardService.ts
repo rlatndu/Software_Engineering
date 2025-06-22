@@ -24,7 +24,7 @@ export interface Issue {
 }
 
 // 기본 칼럼 타입 정의
-export type DefaultColumnId = 1 | 2 | 3;
+export type DefaultColumnId = 1 | 2 | 3 | 4;
 
 export interface DefaultColumn {
   id: DefaultColumnId;
@@ -36,7 +36,8 @@ export interface DefaultColumn {
 export const DEFAULT_COLUMNS: Record<string, DefaultColumn> = {
   TODO: { id: 1, title: '할 일', status: 'TODO' },
   IN_PROGRESS: { id: 2, title: '진행 중', status: 'IN_PROGRESS' },
-  DONE: { id: 3, title: '완료', status: 'DONE' }
+  DONE: { id: 3, title: '완료', status: 'DONE' },
+  HOLD: { id: 4, title: '보류', status: 'HOLD' }
 };
 
 // 칼럼 관련 상수
@@ -45,9 +46,10 @@ export const COLUMN_CONSTANTS = {
   DEFAULT_COLUMNS: {
     TODO: { id: 1, title: '할 일', status: 'TODO', icon: '/assets/todo.png' },
     IN_PROGRESS: { id: 2, title: '진행 중', status: 'IN_PROGRESS', icon: '/assets/inprogress.png' },
-    DONE: { id: 3, title: '완료', status: 'DONE', icon: '/assets/done.png' }
+    DONE: { id: 3, title: '완료', status: 'DONE', icon: '/assets/done.png' },
+    HOLD: { id: 4, title: '보류', status: 'HOLD', icon: '/assets/hold.png' }
   },
-  CUSTOM_COLUMN_START_ID: 4 // 사용자 정의 칼럼의 시작 ID
+  CUSTOM_COLUMN_START_ID: 5 // 사용자 정의 칼럼의 시작 ID를 5로 변경
 } as const;
 
 const BASE_URL = 'http://localhost:8081/api';
