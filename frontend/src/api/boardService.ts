@@ -146,86 +146,8 @@ const boardService = {
 
   // 이슈 관련 API
   getIssues: async (projectId: number): Promise<{ [columnId: number]: Issue[] }> => {
-    const response = await axios.get<Issue[]>(`${BASE_URL}/projects/${projectId}/issues/list`);
-    const issuesByColumn: { [columnId: number]: Issue[] } = {};
-    
-    // 먼저 프로젝트의 모든 칼럼 정보를 가져옴
-    const columns = await boardService.getColumns(projectId);
-    console.log('Available columns:', columns);
-    
-    // 각 컬럼에 대한 빈 배열 초기화
-    columns.forEach(column => {
-      issuesByColumn[column.id] = [];
-    });
-    
-    // 이슈들을 컬럼별로 그룹화
-    response.data.forEach(issue => {
-      console.log('Raw issue data:', issue);
-      
-      // 상태값 정규화
-      let normalizedStatus = issue.status?.toUpperCase().replace(/[^A-Z]/g, '');
-      console.log(`Normalized status for issue ${issue.id}:`, normalizedStatus);
-      
-      // 상태값에 따라 적절한 컬럼 찾기
-      let targetColumnId: number | null = null;
-      
-      if (normalizedStatus) {
-        if (normalizedStatus === 'INPROGRESS') {
-          normalizedStatus = 'IN_PROGRESS';
-        }
-        
-        // 상태값에 따른 칼럼 찾기
-        const column = columns.find(col => {
-          const columnTitle = col.title.toUpperCase().replace(/[^A-Z]/g, '');
-          switch (columnTitle) {
-            case '할일':
-            case 'TODO':
-              return normalizedStatus === 'TODO';
-            case '진행중':
-            case 'INPROGRESS':
-              return normalizedStatus === 'IN_PROGRESS';
-            case '완료':
-            case 'DONE':
-              return normalizedStatus === 'DONE';
-            default:
-              return columnTitle === normalizedStatus;
-          }
-        });
-        
-        if (column) {
-          targetColumnId = column.id;
-          console.log(`Mapped status ${normalizedStatus} to column ID:`, targetColumnId);
-        }
-      }
-      
-      // 매핑된 칼럼이 없으면 첫 번째 칼럼에 배치
-      if (targetColumnId === null && columns.length > 0) {
-        targetColumnId = columns[0].id;
-        console.log(`No matching column found, using first column:`, targetColumnId);
-      }
-      
-      if (targetColumnId !== null && issuesByColumn[targetColumnId]) {
-        console.log(`Assigning issue ${issue.id} to column ${targetColumnId}`);
-        issuesByColumn[targetColumnId].push({
-          ...issue,
-          columnId: targetColumnId
-        });
-      } else {
-        console.warn(`Could not find appropriate column for issue ${issue.id} with status ${issue.status}`);
-      }
-    });
-    
-    // 각 컬럼 내에서 order 기준으로 정렬
-    Object.entries(issuesByColumn).forEach(([columnId, issues]) => {
-      issues.sort((a, b) => {
-        const orderA = typeof a.order === 'number' ? a.order : 0;
-        const orderB = typeof b.order === 'number' ? b.order : 0;
-        return orderA - orderB;
-      });
-    });
-    
-    console.log('Final issues by column:', issuesByColumn);
-    return issuesByColumn;
+    const response = await axios.get<{ [key: string]: Issue[] }>(`${BASE_URL}/projects/${projectId}/issues`);
+    return response.data;
   },
 
   createIssue: async (projectId: number, columnId: number, issue: Partial<Issue>): Promise<Issue> => {

@@ -18,6 +18,7 @@ import com.example.softwareengineering.repository.UserIssueOrderRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -176,7 +177,41 @@ public class IssueService {
     public List<IssueResponse> getIssuesByProject(Long projectId) {
         Project project = projectRepository.findById(projectId)
             .orElseThrow(() -> new CustomException("프로젝트 없음"));
-        List<Issue> issues = issueRepository.findByProject(project);
+            
+        // 현재 로그인한 사용자 정보 가져오기
+        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUserId(userId)
+            .orElseThrow(() -> new CustomException("사용자를 찾을 수 없습니다."));
+            
+        // 프로젝트의 모든 이슈 가져오기
+        List<Issue> issues = issueRepository.findByProjectAndIsActiveTrue(project);
+        
+        // 사용자별 순서 정보 가져오기
+        List<UserIssueOrder> userOrders = userIssueOrderRepository.findByUserIdAndProjectOrderByOrderIndexAsc(userId, project);
+        
+        if (userOrders.isEmpty()) {
+            // 사용자별 순서가 없는 경우, 생성일자 순으로 정렬하여 새로운 순서 생성
+            int order = 0;
+            for (Issue issue : issues) {
+                UserIssueOrder userOrder = UserIssueOrder.builder()
+                    .user(user)
+                    .issue(issue)
+                    .project(project)
+                    .column(issue.getColumn())
+                    .orderIndex(order++)
+                    .build();
+                userIssueOrderRepository.save(userOrder);
+            }
+            // 새로 생성된 순서 조회
+            userOrders = userIssueOrderRepository.findByUserIdAndProjectOrderByOrderIndexAsc(userId, project);
+        }
+        
+        // 사용자별 순서대로 이슈 목록 생성
+        final List<UserIssueOrder> finalUserOrders = userOrders;
+        issues = finalUserOrders.stream()
+            .map(UserIssueOrder::getIssue)
+            .collect(Collectors.toList());
+            
         return issues.stream().map(this::toResponse).collect(Collectors.toList());
     }
 
@@ -409,27 +444,23 @@ public class IssueService {
                 .orElseThrow(() -> new CustomException("이슈를 찾을 수 없습니다."));
             
             try {
-            // 전역 순서 업데이트
-            issue.setOrderIndex(req.getOrder());
-            issueRepository.save(issue);
-
-            // 사용자별 순서 업데이트
-            UserIssueOrder userOrder = userIssueOrderRepository.findByUserAndIssueAndColumn(user, issue, issue.getColumn())
-                    .orElse(new UserIssueOrder());
+                // 사용자별 순서만 업데이트 (userId로 조회)
+                UserIssueOrder userOrder = userIssueOrderRepository.findByUserIdAndIssueAndColumn(user.getUserId(), issue, issue.getColumn())
+                        .orElse(new UserIssueOrder());
 
                 // 새로운 UserIssueOrder인 경우
                 if (userOrder.getId() == null) {
                     userOrder.setUser(user);
                     userOrder.setIssue(issue);
-                    userOrder.setProject(project);  // project 설정
+                    userOrder.setProject(project);
                     userOrder.setColumn(issue.getColumn());
                     userOrder.setCreatedAt(LocalDateTime.now());
                 }
             
-            userOrder.setOrderIndex(req.getOrder());
+                userOrder.setOrderIndex(req.getOrder());
                 userOrder.setUpdatedAt(LocalDateTime.now());
                 
-            userIssueOrderRepository.save(userOrder);
+                userIssueOrderRepository.save(userOrder);
             } catch (Exception e) {
                 log.error("이슈 순서 업데이트 중 오류 발생: {}", e.getMessage(), e);
                 throw new CustomException("이슈 순서 업데이트에 실패했습니다: " + e.getMessage());
@@ -444,18 +475,32 @@ public class IssueService {
         BoardColumn column = columnRepository.findById(columnId)
             .orElseThrow(() -> new CustomException("칼럼을 찾을 수 없습니다."));
 
-        // 사용자별 순서 정보 조회
-        List<UserIssueOrder> userOrders = userIssueOrderRepository.findByUserAndColumnOrderByOrderIndexAsc(user, column);
+        // 사용자별 순서 정보 조회 (userId로 조회)
+        List<UserIssueOrder> userOrders = userIssueOrderRepository.findByUserIdAndColumnOrderByOrderIndexAsc(user.getUserId(), column);
         
-        if (!userOrders.isEmpty()) {
-            // 사용자별 순서가 있는 경우 해당 순서 사용
-            return userOrders.stream()
-                .map(UserIssueOrder::getIssue)
-                .collect(Collectors.toList());
-        } else {
-            // 사용자별 순서가 없는 경우 기본 순서 사용
-            return issueRepository.findByColumnAndIsActiveTrueOrderByOrderIndexAsc(column);
+        if (userOrders.isEmpty()) {
+            // 사용자별 순서가 없는 경우, 생성일자 순으로 정렬하여 새로운 순서 생성
+            List<Issue> issues = issueRepository.findByColumnAndIsActiveTrueOrderByCreatedAtAsc(column);
+            int order = 0;
+            for (Issue issue : issues) {
+                UserIssueOrder userOrder = new UserIssueOrder();
+                userOrder.setUser(user);
+                userOrder.setIssue(issue);
+                userOrder.setProject(issue.getProject());
+                userOrder.setColumn(column);
+                userOrder.setOrderIndex(order++);
+                userOrder.setCreatedAt(LocalDateTime.now());
+                userOrder.setUpdatedAt(LocalDateTime.now());
+                userIssueOrderRepository.save(userOrder);
+            }
+            // 새로 생성된 순서 조회
+            userOrders = userIssueOrderRepository.findByUserIdAndColumnOrderByOrderIndexAsc(user.getUserId(), column);
         }
+
+        // 사용자별 순서 반환
+        return userOrders.stream()
+            .map(UserIssueOrder::getIssue)
+            .collect(Collectors.toList());
     }
 
     private IssueResponse toResponse(Issue issue) {

@@ -15,6 +15,8 @@ import java.util.List;
 
 @Repository
 public interface IssueRepository extends JpaRepository<Issue, Long> {
+    List<Issue> findByColumnAndIsActiveTrue(BoardColumn column);
+    List<Issue> findByColumnAndIsActiveTrueOrderByCreatedAtAsc(BoardColumn column);
     List<Issue> findByColumnAndIsActiveTrueOrderByOrderIndexAsc(BoardColumn column);
     List<Issue> findByProject(Project project);
     List<Issue> findByProjectAndIsActiveTrue(Project project);

@@ -7,16 +7,22 @@ import com.example.softwareengineering.entity.ProjectMember;
 import com.example.softwareengineering.entity.SiteMember;
 import com.example.softwareengineering.entity.User;
 import com.example.softwareengineering.entity.MemberRole;
+import com.example.softwareengineering.entity.UserIssueOrder;
 import com.example.softwareengineering.repository.BoardColumnRepository;
 import com.example.softwareengineering.repository.IssueRepository;
 import com.example.softwareengineering.repository.ProjectMemberRepository;
 import com.example.softwareengineering.repository.ProjectRepository;
 import com.example.softwareengineering.repository.SiteMemberRepository;
+import com.example.softwareengineering.repository.UserRepository;
+import com.example.softwareengineering.repository.UserIssueOrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +38,8 @@ public class BoardService {
     private final IssueRepository issueRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final SiteMemberRepository siteMemberRepository;
+    private final UserRepository userRepository;
+    private final UserIssueOrderRepository userIssueOrderRepository;
 
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getColumns(Long projectId) {
@@ -64,10 +72,15 @@ public class BoardService {
         }
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public Map<String, List<Map<String, Object>>> getIssues(Long projectId) {
         try {
             log.info("프로젝트 이슈 목록 조회: projectId={}", projectId);
+            
+            // 현재 로그인한 사용자 정보 가져오기
+            UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            User user = userRepository.findByUserId(userDetails.getUsername())
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
             
             // 1. 프로젝트 존재 확인
             Project project = projectRepository.findById(projectId)
@@ -81,8 +94,33 @@ public class BoardService {
             Map<String, List<Map<String, Object>>> issuesByColumn = new HashMap<>();
 
             for (BoardColumn column : columns) {
-                List<Issue> issues = issueRepository.findByColumnAndIsActiveTrueOrderByOrderIndexAsc(column);
-                log.debug("칼럼 {}: 조회된 이슈 수: {}", column.getId(), issues.size());
+                // 사용자별 순서 정보 조회
+                List<UserIssueOrder> userOrders = userIssueOrderRepository.findByUserIdAndColumnOrderByOrderIndexAsc(user.getUserId(), column);
+                List<Issue> issues;
+                
+                if (userOrders.isEmpty()) {
+                    // 사용자별 순서가 없는 경우, 생성일자 순으로 정렬하여 새로운 순서 생성
+                    issues = issueRepository.findByColumnAndIsActiveTrueOrderByCreatedAtAsc(column);
+                    int order = 0;
+                    for (Issue issue : issues) {
+                        UserIssueOrder userOrder = UserIssueOrder.builder()
+                            .user(user)
+                            .issue(issue)
+                            .project(project)
+                            .column(column)
+                            .orderIndex(order++)
+                            .build();
+                        userIssueOrderRepository.save(userOrder);
+                    }
+                    // 새로 생성된 순서 조회
+                    userOrders = userIssueOrderRepository.findByUserIdAndColumnOrderByOrderIndexAsc(user.getUserId(), column);
+                }
+                
+                // 사용자별 순서대로 이슈 목록 생성
+                final List<UserIssueOrder> finalUserOrders = userOrders;
+                issues = finalUserOrders.stream()
+                    .map(UserIssueOrder::getIssue)
+                    .collect(Collectors.toList());
                 
                 List<Map<String, Object>> issueList = issues.stream()
                         .map(issue -> {
@@ -104,7 +142,13 @@ public class BoardService {
                                 issueMap.put("reporterId", null);
                             }
                             issueMap.put("columnId", issue.getColumn().getId());
-                            issueMap.put("order", issue.getOrderIndex());
+                            // 현재 사용자의 순서 가져오기
+                            Integer orderIndex = finalUserOrders.stream()
+                                .filter(uo -> uo.getIssue().getId().equals(issue.getId()))
+                                .findFirst()
+                                .map(UserIssueOrder::getOrderIndex)
+                                .orElse(0);
+                            issueMap.put("order", orderIndex);
                             return issueMap;
                         })
                         .collect(Collectors.toList());
