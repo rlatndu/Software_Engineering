@@ -8,6 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { canManageProject } from '../../utils/permissionUtils';
 import ConfirmPopup from '../../components/ConfirmPopup';
 import ResultPopup from '../../components/ResultPopup';
+import AccessDeniedPopup from '../../components/AccessDeniedPopup';
 
 interface ProjectTabProps {
   projects: Project[];
@@ -20,8 +21,7 @@ const ProjectTab: React.FC<ProjectTabProps> = ({ projects, selectedProjectIndex,
   const [viewTab, setViewTab] = useState<'board' | 'backlog'>('board');
   const { user } = useAuth();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showResultPopup, setShowResultPopup] = useState(false);
-  const [resultMessage, setResultMessage] = useState('');
+  const [popup, setPopup] = useState<{ type: 'accessDenied' | 'result' | null, message?: string }>({ type: null });
 
   if (projects.length === 0) {
     return (
@@ -43,6 +43,13 @@ const ProjectTab: React.FC<ProjectTabProps> = ({ projects, selectedProjectIndex,
   const hasDeletePermission = user && canManageProject(user, selectedProject);
 
   const handleDeleteClick = () => {
+    if (!hasDeletePermission) {
+      setPopup({
+        type: 'accessDenied',
+        message: '프로젝트 삭제 권한이 없습니다.\n프로젝트 관리자만 삭제할 수 있습니다.'
+      });
+      return;
+    }
     setShowDeleteConfirm(true);
   };
 
@@ -52,15 +59,19 @@ const ProjectTab: React.FC<ProjectTabProps> = ({ projects, selectedProjectIndex,
         throw new Error('로그인이 필요합니다.');
       }
       await projectService.deleteProject(selectedProject.id, user.id);
-      setResultMessage('프로젝트가 성공적으로 삭제되었습니다.');
-      setShowResultPopup(true);
+      setPopup({
+        type: 'result',
+        message: '프로젝트가 성공적으로 삭제되었습니다.'
+      });
       setTimeout(() => {
         window.location.reload();
       }, 1500);
     } catch (err: any) {
       console.error('Error deleting project:', err);
-      setResultMessage(err.message || '프로젝트 삭제에 실패했습니다.');
-      setShowResultPopup(true);
+      setPopup({
+        type: 'accessDenied',
+        message: err.message || '프로젝트 삭제에 실패했습니다.'
+      });
     }
     setShowDeleteConfirm(false);
   };
@@ -113,10 +124,16 @@ const ProjectTab: React.FC<ProjectTabProps> = ({ projects, selectedProjectIndex,
         />
       )}
 
-      {showResultPopup && (
+      {popup.type === 'accessDenied' && (
+        <AccessDeniedPopup
+          message={popup.message || ''}
+          onClose={() => setPopup({ type: null })}
+        />
+      )}
+      {popup.type === 'result' && (
         <ResultPopup
-          message={resultMessage}
-          onClose={() => setShowResultPopup(false)}
+          message={popup.message || ''}
+          onClose={() => setPopup({ type: null })}
         />
       )}
     </div>

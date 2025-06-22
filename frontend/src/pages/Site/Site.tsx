@@ -6,6 +6,9 @@ import { recentSiteService } from "../../api/recentSiteService";
 import { useAuth } from "../../contexts/AuthContext";
 import ResultPopup from "../../components/ResultPopup";
 import ConfirmPopup from "../../components/ConfirmPopup";
+import AccessDeniedPopup from '../../components/AccessDeniedPopup';
+import projectService from "../../api/projectService";
+import { UserRole } from "../../types/role";
 import "./Site.css";
 
 const SitePage = () => {
@@ -21,7 +24,7 @@ const SitePage = () => {
   const [showDropdown, setShowDropdown] = useState<number | null>(null);
   const [activePopup, setActivePopup] = useState<'settings' | 'profile' | 'notifications' | null>(null);
   const popupRef = useRef<HTMLDivElement>(null);
-  const [popup, setPopup] = useState<{ type: string | null, message?: string }>({ type: null });
+  const [popup, setPopup] = useState<{ type: 'accessDenied' | 'result' | null, message?: string }>({ type: null });
 
   // 드롭다운 외부 클릭 시 닫기
   useEffect(() => {
@@ -92,10 +95,30 @@ const SitePage = () => {
     fetchSites();
   }, []);
 
-  const handleDeleteClick = (siteId: number) => {
-    setSelectedSiteId(siteId);
-    setShowDeleteConfirm(true);
-    setDeleteError(null);
+  const handleDeleteClick = async (siteId: number) => {
+    try {
+      if (!user?.userId) {
+        throw new Error('로그인이 필요합니다.');
+      }
+
+      // 사이트 소유자 확인
+      const site = await siteService.getSiteById(siteId);
+      if (site.owner.id !== user.id) {
+        setPopup({
+          type: 'accessDenied',
+          message: '사이트 삭제 권한이 없습니다.\n사이트 소유자만 삭제할 수 있습니다.'
+        });
+        return;
+      }
+
+      setSelectedSiteId(siteId);
+      setShowDeleteConfirm(true);
+    } catch (error: any) {
+      setPopup({
+        type: 'accessDenied',
+        message: error.message || '사이트 삭제 권한을 확인할 수 없습니다.'
+      });
+    }
   };
 
   const handleDeleteConfirm = async () => {
@@ -105,11 +128,16 @@ const SitePage = () => {
       await siteService.deleteSite(selectedSiteId);
       setShowDeleteConfirm(false);
       setSelectedSiteId(null);
-      // 사이트 목록 새로고침
+      setPopup({
+        type: 'result',
+        message: '사이트가 성공적으로 삭제되었습니다.'
+      });
       fetchSites();
-    } catch (err: any) {
-      console.error("Error deleting site:", err);
-      setDeleteError(err.message);
+    } catch (error: any) {
+      setPopup({
+        type: 'accessDenied',
+        message: error.message || '사이트 삭제에 실패했습니다.'
+      });
     }
   };
 
@@ -381,10 +409,16 @@ const SitePage = () => {
         />
       )}
 
+      {popup.type === 'accessDenied' && (
+        <AccessDeniedPopup
+          message={popup.message || ''}
+          onClose={() => setPopup({ type: null })}
+        />
+      )}
       {popup.type === 'result' && (
-        <ResultPopup 
-          message={popup.message || ''} 
-          onClose={() => setPopup({ type: null })} 
+        <ResultPopup
+          message={popup.message || ''}
+          onClose={() => setPopup({ type: null })}
         />
       )}
     </div>

@@ -17,6 +17,7 @@ import TeamPage from "../Team/TeamPage";
 import ActivityLogView from './ActivityLogView';
 import { activityService } from "../../api/activityService";
 import { ActivityLog } from "../../types/activity";
+import AccessDeniedPopup from '../../components/AccessDeniedPopup';
 
 type TabType = 'recommend' | 'recent' | 'project' | 'dashboard' | 'team';
 type RecommendSubTab = 'recent' | 'unresolved';
@@ -65,7 +66,7 @@ const Main = () => {
   const [error, setError] = useState<string>("");
   const [activePopup, setActivePopup] = useState<'notifications' | 'settings' | 'profile' | null>(null);
   const popupRef = useRef<HTMLDivElement>(null);
-  const [popup, setPopup] = useState<{ type: string | null, message?: string }>({ type: null });
+  const [popup, setPopup] = useState<{ type: 'accessDenied' | 'result' | null, message?: string }>({ type: null });
   const [activitiesLoading, setActivitiesLoading] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([
     {
@@ -349,30 +350,9 @@ const Main = () => {
     }
   }, [siteId, recommendSubTab, loading, error, activeTab]);
 
-  const handleCreateProject = async () => {
+  const handleCreateProject = async (siteId: number) => {
     try {
-      console.log('=== 프로젝트 생성 시도 ===');
-      console.log('loading:', loading);
-      console.log('user:', user);
-      console.log('siteId:', siteId);
-      console.log('isAuthenticated:', !!user);
-      console.log('======================');
-
-      // 로딩 중이거나 사이트 ID가 없으면 취소
-      if (loading) {
-        console.log('로딩 중, 프로젝트 생성 취소');
-        return;
-      }
-
-      if (!siteId) {
-        console.log('사이트 ID가 없음');
-        setError('잘못된 사이트 ID입니다.');
-        return;
-      }
-
-      // 로그인 상태가 아닌 경우
-      if (!user) {
-        console.log('사용자가 로그인하지 않음, 로그인 페이지로 리다이렉트');
+      if (!user?.userId) {
         navigate('/login', { 
           state: { 
             from: `/sites/${siteId}/main`,
@@ -382,25 +362,18 @@ const Main = () => {
         return;
       }
 
-      // 사이트 멤버 권한 체크는 로그인 상태일 때만 수행
-      const parsedSiteId = parseInt(siteId);
-      if (isNaN(parsedSiteId)) {
-        throw new Error('잘못된 사이트 ID입니다.');
-      }
-
-      // 사이트 멤버 권한 확인
-      console.log('사이트 멤버 권한 확인 시작');
-      const role = await projectService.getSiteMemberRole(parsedSiteId, user.userId);
-      console.log('Site member role response:', role);
+      const role = await projectService.getSiteMemberRole(siteId, user.userId);
       
       // ADMIN 또는 PM만 프로젝트 생성 가능
       if (role !== UserRole.ADMIN && role !== UserRole.PM) {
-        console.log('권한 없음:', role);
-        throw new Error('프로젝트 생성 권한이 없습니다. ADMIN 또는 PM만 프로젝트를 생성할 수 있습니다.');
+        setPopup({
+          type: 'accessDenied',
+          message: '프로젝트 생성 권한이 없습니다.\nADMIN 또는 PM만 프로젝트를 생성할 수 있습니다.'
+        });
+        return;
       }
 
       // 권한이 있으면 프로젝트 생성 페이지로 이동
-      console.log('프로젝트 생성 페이지로 이동');
       navigate(`/create/project/${siteId}`);
     } catch (error: any) {
       console.error('프로젝트 생성 권한 체크 에러:', error);
@@ -412,9 +385,15 @@ const Main = () => {
           } 
         });
       } else if (error.message.includes('사이트 멤버가 아닙니다')) {
-        setError('이 사이트의 멤버가 아닙니다.');
+        setPopup({
+          type: 'accessDenied',
+          message: '이 사이트의 멤버가 아닙니다.'
+        });
       } else {
-        setError(error.message || '프로젝트 생성 권한을 확인할 수 없습니다.');
+        setPopup({
+          type: 'accessDenied',
+          message: error.message || '프로젝트 생성 권한을 확인할 수 없습니다.'
+        });
       }
     }
   };
@@ -719,7 +698,7 @@ const Main = () => {
                     </button>
 
                     {tab.id === 'project' && (
-                      <button onClick={handleCreateProject} className="tab-plus-button" title="프로젝트 만들기">
+                      <button onClick={() => handleCreateProject(Number(siteId))} className="tab-plus-button" title="프로젝트 만들기">
                         <img src="/assets/plus.png" alt="프로젝트 추가" />
                       </button>
                     )}
@@ -863,10 +842,16 @@ const Main = () => {
         </div>
       )}
 
+      {popup.type === 'accessDenied' && (
+        <AccessDeniedPopup
+          message={popup.message || ''}
+          onClose={() => setPopup({ type: null })}
+        />
+      )}
       {popup.type === 'result' && (
-        <ResultPopup 
-          message={popup.message || ''} 
-          onClose={() => setPopup({ type: null })} 
+        <ResultPopup
+          message={popup.message || ''}
+          onClose={() => setPopup({ type: null })}
         />
       )}
     </div>
