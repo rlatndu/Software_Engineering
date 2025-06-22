@@ -530,7 +530,7 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
           await projectService.updateIssue(project.id, movedIssue.id, {
             title: movedIssue.title,
             description: movedIssue.description || '',
-            status: column.title,
+            status: getStatusFromColumnTitle(column.title),
             startDate: movedIssue.startDate,
             endDate: movedIssue.endDate,
             assigneeId: movedIssue.assigneeId || ''
@@ -561,7 +561,7 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
       case '완료':
         return 'DONE';
       default:
-        return title.toUpperCase();
+        return columnTitle.toUpperCase().replace(/\s+/g, '_');
     }
   };
 
