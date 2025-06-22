@@ -16,6 +16,7 @@ public interface InvitationRepository extends JpaRepository<Invitation, Long> {
     List<Invitation> findByProject(Project project);
     Optional<Invitation> findByInviteeEmailAndProject(String email, Project project);
     boolean existsByInviteeEmailAndProject(String email, Project project);
+    Optional<Invitation> findByToken(String token);
     
     @Modifying
     void deleteBySite(Site site);

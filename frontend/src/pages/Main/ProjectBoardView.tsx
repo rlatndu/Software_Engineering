@@ -468,7 +468,7 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
             startDate: movedIssue.startDate,
             endDate: movedIssue.endDate,
             assigneeId: movedIssue.assigneeId || ''
-          }, user.id);
+          });
         }
       }
     } catch (error) {
@@ -501,6 +501,11 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
     }
   };
 
+  // status(예: 'TODO')로 칼럼 찾기
+  const findColumnByStatus = (status: string) => {
+    return columns.find(col => getStatusFromColumnTitle(col.title) === status);
+  };
+
   const handleEdit = async (updated: any) => {
     if (!user || !editingIssue) {
       throw new Error('로그인이 필요합니다.');
@@ -514,10 +519,10 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
         startDate: updated.start_date,
         endDate: updated.end_date,
         assigneeId: updated.assignee_id || ''
-      }, user.id);
+      });
       
       // 이슈 상태가 변경된 경우 해당하는 칼럼으로 이동
-      const targetColumn = columns.find(col => col.title.toUpperCase() === updated.status);
+      const targetColumn = findColumnByStatus(updated.status);
       if (!targetColumn) {
         throw new Error('해당하는 칼럼을 찾을 수 없습니다.');
       }

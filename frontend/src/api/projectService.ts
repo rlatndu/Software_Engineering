@@ -210,7 +210,7 @@ export const projectService = {
         startDate: string;
         endDate: string;
         assigneeId: string;
-    }, userId: number): Promise<any> => {
+    }): Promise<any> => {
         try {
             // 로컬 스토리지나 세션 스토리지에서 토큰 가져오기
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -218,7 +218,7 @@ export const projectService = {
                 throw new Error('로그인이 필요합니다.');
             }
 
-            const response = await axiosInstance.put(`/projects/${projectId}/issues/${issueId}?userId=${userId}`, {
+            const response = await axiosInstance.put(`/projects/${projectId}/issues/${issueId}`, {
                 title: data.title,
                 description: data.description,
                 status: data.status,

@@ -228,7 +228,7 @@ const boardService = {
     }
   },
 
-  deleteIssue: async (issueId: number, projectId: number): Promise<void> => {
+  deleteIssue: async (projectId: number, issueId: number): Promise<void> => {
     try {
       await axios.delete(`${BASE_URL}/projects/${projectId}/issues/${issueId}`);
     } catch (error) {

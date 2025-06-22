@@ -38,6 +38,9 @@ public class Invitation {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(unique = true, length = 64)
+    private String token;
+
     @Builder.Default
     private boolean accepted = false;
     @Builder.Default

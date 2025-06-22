@@ -153,6 +153,7 @@ public class Issue {
             userOrder = UserIssueOrder.builder()
                 .user(user)
                 .issue(this)
+                .project(this.project)
                 .column(this.column)
                 .orderIndex(order)
                 .build();

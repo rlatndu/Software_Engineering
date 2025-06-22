@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.UUID;
 
 @Service
 public class InvitationService {
@@ -32,6 +33,9 @@ public class InvitationService {
 
     @Autowired
     private ProjectMemberRepository projectMemberRepository;
+
+    @Autowired
+    private EmailService emailService;
 
     @Transactional
     public Invitation inviteToSite(Long siteId, String inviteeEmail, Long inviterId) {
@@ -73,6 +77,7 @@ public class InvitationService {
         invitation.setInviteeEmail(inviteeEmail);
         invitation.setRole(MemberRole.MEMBER);
         invitation.setCreatedAt(LocalDateTime.now());
+        invitation.setToken(UUID.randomUUID().toString());
         return invitationRepository.save(invitation);
     }
 

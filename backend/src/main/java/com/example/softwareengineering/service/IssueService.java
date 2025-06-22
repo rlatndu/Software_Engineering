@@ -74,7 +74,7 @@ public class IssueService {
         ProjectMember projectMember = projectMemberRepository.findByProjectAndUser(project, user)
             .orElse(null);
             
-        return projectMember != null && projectMember.getRole() == MemberRole.PM;
+        return projectMember != null && (projectMember.getRole() == MemberRole.PM || projectMember.getRole() == MemberRole.ADMIN);
     }
 
     // 이슈 생성 (프로젝트 관리자만)
@@ -101,7 +101,12 @@ public class IssueService {
             if (request.getEndDate() == null) {
                 throw new CustomException("마감일(종료일)은 필수입니다.");
             }
-            if (!List.of("TODO", "IN_PROGRESS", "DONE", "HOLD").contains(request.getStatus())) {
+
+            // 상태 문자열 정규화 (공백→'_') & 대문자 변환
+            String normalizedStatus = request.getStatus() == null ? "TODO"
+                    : request.getStatus().replace(" ", "_").toUpperCase();
+
+            if (!List.of("TODO", "IN_PROGRESS", "DONE", "HOLD").contains(normalizedStatus)) {
                 throw new CustomException("status는 TODO, IN_PROGRESS, DONE, HOLD만 가능합니다.");
             }
 
@@ -124,12 +129,13 @@ public class IssueService {
             Issue issue = new Issue();
             issue.setProject(project);
             issue.setTitle(request.getTitle());
-            issue.setStatus(IssueStatus.valueOf(request.getStatus()));
+            issue.setStatus(IssueStatus.valueOf(normalizedStatus));
             issue.setDescription(request.getDescription());
             issue.setStartDate(request.getStartDate());
             issue.setEndDate(request.getEndDate());
             issue.setCreatedAt(LocalDateTime.now());
-            issue.setOrderIndex(request.getOrder());
+            int orderIdx = request.getOrder() != null ? request.getOrder() : 0;
+            issue.setOrderIndex(orderIdx);
             issue.setColumn(column);   // 컬럼 설정
             issue.setReporter(reporterUser);  // 보고자 설정
             issue.setCreatedBy(reporterUser); // 생성자 설정
@@ -236,7 +242,8 @@ public class IssueService {
             issue.setDescription(request.getDescription());
         }
         if (request.getStatus() != null) {
-            IssueStatus newStatus = IssueStatus.valueOf(request.getStatus());
+            String normalizedStatus = request.getStatus().replace(" ", "_").toUpperCase();
+            IssueStatus newStatus = IssueStatus.valueOf(normalizedStatus);
             if (oldStatus != newStatus) {  // 상태가 실제로 변경되었는지 확인
                 issue.setStatus(newStatus);
                 
@@ -245,7 +252,7 @@ public class IssueService {
                 BoardColumn targetColumn = null;
                 
                 // 상태 이름과 칼럼 이름 매칭
-                String statusName = request.getStatus();
+                String statusName = normalizedStatus;
                 if (statusName.equals("TODO")) {
                     statusName = "To Do";
                 } else if (statusName.equals("IN_PROGRESS")) {
@@ -338,8 +345,8 @@ public class IssueService {
                 .build());
         }
 
-        // 담당자 변경
-        if (request.getAssigneeId() != null && !request.getAssigneeId().equals(issue.getAssignee() != null ? issue.getAssignee().getUserId() : null)) {
+        // 담당자 변경 (빈 문자열이면 변경 없음으로 간주)
+        if (request.getAssigneeId() != null && !request.getAssigneeId().isBlank() && !request.getAssigneeId().equals(issue.getAssignee() != null ? issue.getAssignee().getUserId() : null)) {
             User newAssignee = userRepository.findByUserId(request.getAssigneeId())
                 .orElseThrow(() -> new CustomException("새 담당자를 찾을 수 없습니다."));
             issue.setAssignee(newAssignee);

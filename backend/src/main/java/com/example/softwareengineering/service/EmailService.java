@@ -175,4 +175,41 @@ public class EmailService {
         verificationCodeTimes.remove(key);
         logger.info("인증 코드 삭제 완료. 키: {}", key);
     }
+
+    /**
+     * 프로젝트/사이트 초대 메일 발송
+     */
+    public void sendInvitationEmail(String email, String projectOrSiteName, String token) {
+        try {
+            MimeMessage message = emailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setTo(email);
+            helper.setFrom(String.format("%s <%s>", senderName, senderEmail));
+            helper.setSubject("[Slime] 팀 초대 안내");
+
+            String acceptUrl = String.format("%s/invite/accept?token=%s", frontendUrl, token);
+            String rejectUrl = String.format("%s/invite/reject?token=%s", frontendUrl, token);
+
+            String content = String.format("""
+                    <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">
+                        <h2>프로젝트/사이트 초대</h2>
+                        <p>안녕하세요!</p>
+                        <p>당신은 <strong>%s</strong> 으로부터 초대를 받았습니다.</p>
+                        <div style=\"margin: 30px 0;\">
+                            <a href=\"%s\" style=\"background-color: #4CAF50; color: white; padding: 15px 25px; text-decoration: none; border-radius: 4px;\">초대 수락</a>
+                            &nbsp;&nbsp;
+                            <a href=\"%s\" style=\"background-color: #f44336; color: white; padding: 15px 25px; text-decoration: none; border-radius: 4px;\">초대 거절</a>
+                        </div>
+                        <p>감사합니다.</p>
+                    </div>
+                    """, projectOrSiteName, acceptUrl, rejectUrl);
+
+            helper.setText(content, true);
+            emailSender.send(message);
+            logger.info("Invitation mail sent to {}", email);
+        } catch (MessagingException e) {
+            logger.error("Failed to send invitation mail to {}", email, e);
+        }
+    }
 } 
