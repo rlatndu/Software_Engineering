@@ -92,10 +92,10 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
         ]);
         
         const userMember = members.find(member => member.userId === user.userId);
-        if (!userMember) {
+        if (!userMember && project.isPrivate) {
           setPopup({
             type: 'accessDenied',
-            payload: { message: '프로젝트 멤버가 아닙니다.' }
+            payload: { message: '비공개 프로젝트입니다. 프로젝트 멤버만 접근할 수 있습니다.' }
           });
           return;
         }
