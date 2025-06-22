@@ -12,6 +12,7 @@ public class IssueUpdateRequest {
     private String status;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
-    private String assigneeId;
     private Integer order;
+    private String assigneeId;
+    private Long columnId;
 } 

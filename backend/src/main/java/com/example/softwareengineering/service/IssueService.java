@@ -268,11 +268,73 @@ public class IssueService {
             IssueStatus newStatus = IssueStatus.valueOf(request.getStatus());
             if (oldStatus != newStatus) {  // 상태가 실제로 변경되었는지 확인
                 issue.setStatus(newStatus);
+                
+                // 상태에 맞는 칼럼 찾기
+                List<BoardColumn> columns = columnRepository.findByProjectAndIsActiveTrueOrderByOrderIndexAsc(issue.getProject());
+                BoardColumn targetColumn = null;
+                
+                // 상태 이름과 칼럼 이름 매칭
+                String statusName = request.getStatus();
+                if (statusName.equals("TODO")) {
+                    statusName = "To Do";
+                } else if (statusName.equals("IN_PROGRESS")) {
+                    statusName = "In Progress";
+                } else if (statusName.equals("DONE")) {
+                    statusName = "Done";
+                }
+                
+                for (BoardColumn col : columns) {
+                    if (col.getTitle().equals(statusName)) {
+                        targetColumn = col;
+                        break;
+                    }
+                }
+                
+                if (targetColumn == null) {
+                    throw new CustomException("상태에 해당하는 칼럼을 찾을 수 없습니다: " + statusName);
+                }
+                
+                // 이전 칼럼 저장
+                BoardColumn oldColumn = issue.getColumn();
+                
+                // 칼럼 변경
+                issue.setColumn(targetColumn);
+                
+                // 이전 칼럼에서 해당 이슈의 순서 정보 삭제
+                List<UserIssueOrder> oldOrders = userIssueOrderRepository.findByIssueAndColumn(issue, oldColumn);
+                userIssueOrderRepository.deleteAll(oldOrders);
+                
+                // 새로운 칼럼에 모든 사용자의 이슈 순서 정보 추가
+                List<ProjectMember> projectMembers = projectMemberRepository.findByProject(issue.getProject());
+                for (ProjectMember member : projectMembers) {
+                    // 해당 사용자의 새 칼럼에서의 마지막 순서 찾기
+                    List<UserIssueOrder> userOrders = userIssueOrderRepository.findByUserIdAndColumnOrderByOrderIndexDesc(
+                        member.getUser().getUserId(), 
+                        targetColumn
+                    );
+                    int newOrderIndex = userOrders.isEmpty() ? 0 : userOrders.get(0).getOrderIndex() + 1;
+                    
+                    // 새로운 순서 정보 생성
+                    UserIssueOrder newOrder = UserIssueOrder.builder()
+                        .user(member.getUser())
+                        .issue(issue)
+                        .project(issue.getProject())
+                        .column(targetColumn)
+                        .orderIndex(newOrderIndex)
+                        .createdAt(LocalDateTime.now())
+                        .updatedAt(LocalDateTime.now())
+                        .build();
+                    userIssueOrderRepository.save(newOrder);
+                }
+                
+                // 활동 내역 저장
                 activityLogService.createActivityLog(ActivityLogRequestDTO.builder()
                     .userId(userId)
                     .type(ActivityType.ISSUE_STATUS_CHANGE)
                     .title(issue.getTitle())
-                    .content(issue.getTitle())
+                    .content(String.format("상태 변경: %s → %s, 칼럼 변경: %s → %s", 
+                        oldStatus, newStatus, 
+                        oldColumn.getTitle(), targetColumn.getTitle()))
                     .projectId(issue.getProject().getId())
                     .issueId(issue.getId())
                     .statusChange(oldStatus + " -> " + newStatus)

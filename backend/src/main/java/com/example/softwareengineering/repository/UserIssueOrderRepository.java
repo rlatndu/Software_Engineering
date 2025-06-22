@@ -20,16 +20,22 @@ public interface UserIssueOrderRepository extends JpaRepository<UserIssueOrder, 
     List<UserIssueOrder> findByColumnId(Long columnId);
     Optional<UserIssueOrder> findByUserAndIssueAndColumn(User user, Issue issue, BoardColumn column);
     
-    @Query("SELECT uo FROM UserIssueOrder uo WHERE uo.user.userId = :userId AND uo.column = :column ORDER BY uo.orderIndex ASC")
+    @Query("SELECT uo FROM UserIssueOrder uo WHERE uo.user.userId = :userId AND uo.column = :column AND uo.issue.isActive = true ORDER BY uo.orderIndex ASC")
     List<UserIssueOrder> findByUserIdAndColumnOrderByOrderIndexAsc(@Param("userId") String userId, @Param("column") BoardColumn column);
     
-    @Query("SELECT uo FROM UserIssueOrder uo WHERE uo.user.userId = :userId AND uo.issue = :issue AND uo.column = :column")
-    Optional<UserIssueOrder> findByUserIdAndIssueAndColumn(@Param("userId") String userId, @Param("issue") Issue issue, @Param("column") BoardColumn column);
+    @Query("SELECT uo FROM UserIssueOrder uo WHERE uo.user.userId = :userId AND uo.column = :column AND uo.issue.isActive = true ORDER BY uo.orderIndex DESC")
+    List<UserIssueOrder> findByUserIdAndColumnOrderByOrderIndexDesc(@Param("userId") String userId, @Param("column") BoardColumn column);
     
-    @Query("SELECT uo FROM UserIssueOrder uo WHERE uo.user.userId = :userId AND uo.project = :project ORDER BY uo.orderIndex ASC")
+    @Query("SELECT uo FROM UserIssueOrder uo WHERE uo.user.userId = :userId AND uo.project = :project AND uo.issue.isActive = true ORDER BY uo.orderIndex ASC")
     List<UserIssueOrder> findByUserIdAndProjectOrderByOrderIndexAsc(@Param("userId") String userId, @Param("project") Project project);
 
-    @Query("SELECT uo FROM UserIssueOrder uo WHERE uo.user.id = :userId AND uo.issue = :issue")
+    @Query("SELECT uo FROM UserIssueOrder uo WHERE uo.issue = :issue AND uo.column = :column AND uo.issue.isActive = true")
+    List<UserIssueOrder> findByIssueAndColumn(@Param("issue") Issue issue, @Param("column") BoardColumn column);
+    
+    @Query("SELECT uo FROM UserIssueOrder uo WHERE uo.user.userId = :userId AND uo.issue = :issue AND uo.column = :column AND uo.issue.isActive = true")
+    Optional<UserIssueOrder> findByUserIdAndIssueAndColumn(@Param("userId") String userId, @Param("issue") Issue issue, @Param("column") BoardColumn column);
+    
+    @Query("SELECT uo FROM UserIssueOrder uo WHERE uo.user.id = :userId AND uo.issue = :issue AND uo.issue.isActive = true")
     Optional<UserIssueOrder> findByUserAndIssue(@Param("userId") Long userId, @Param("issue") Issue issue);
     
     @Query("DELETE FROM UserIssueOrder uo WHERE uo.project = :project")
