@@ -67,4 +67,8 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long> 
     @Modifying
     @Query("DELETE FROM ActivityLog a WHERE a.project.site.id = :siteId")
     void deleteBySiteId(Long siteId);
+
+    @Modifying
+    @Query("DELETE FROM ActivityLog a WHERE a.project.id = :projectId")
+    void deleteByProjectId(@Param("projectId") Long projectId);
 } 

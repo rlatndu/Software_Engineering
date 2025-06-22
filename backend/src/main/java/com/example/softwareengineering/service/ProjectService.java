@@ -6,6 +6,7 @@ import com.example.softwareengineering.dto.ProjectDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -30,6 +32,10 @@ public class ProjectService {
     private final RecentWorkRepository recentWorkRepository;
     private final ActivityLogRepository activityLogRepository;
     private final CommentRepository commentRepository;
+    private final NotificationRepository notificationRepository;
+    private final UserIssueOrderRepository userIssueOrderRepository;
+    private final IssueCommentRepository issueCommentRepository;
+    private final IssueFileRepository issueFileRepository;
 
     @Transactional
     public ProjectDTO createProject(Long siteId, String name, String key, boolean isPrivate, Long creatorId, String creatorRole) {
@@ -125,6 +131,8 @@ public class ProjectService {
 
     @Transactional
     public void deleteProject(Long projectId, Long userId) {
+        log.info("프로젝트 {} 삭제 시작", projectId);
+
         // 1. 프로젝트 존재 확인
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
@@ -134,17 +142,63 @@ public class ProjectService {
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         // 3. 삭제 권한 확인
-        // 3-1. 사이트 ADMIN 권한 확인
+        checkDeletePermission(project, user);
+
+        try {
+            // 4. 활동 로그 삭제
+            log.debug("활동 로그 삭제 시작");
+            activityLogRepository.deleteByProjectId(projectId);
+
+            // 5. 최근 방문 기록 삭제
+            log.debug("최근 방문 기록 삭제 시작");
+            recentProjectVisitRepository.deleteByProjectId(projectId);
+            recentWorkRepository.deleteByProjectId(projectId);
+
+            // 6. 알림 삭제
+            log.debug("알림 삭제 시작");
+            notificationRepository.deleteByProjectId(projectId);
+
+            // 7. 이슈 관련 데이터 삭제
+            log.debug("이슈 관련 데이터 삭제 시작");
+            // 7-1. 이슈 순서 삭제
+            userIssueOrderRepository.deleteByProjectId(projectId);
+            // 7-2. 이슈 댓글 삭제
+            issueCommentRepository.deleteByProjectId(projectId);
+            // 7-3. 이슈 첨부파일 삭제
+            issueFileRepository.deleteByProjectId(projectId);
+            // 7-4. 이슈 삭제
+            issueRepository.deleteByProject(project);
+
+            // 8. 보드 컬럼 삭제
+            log.debug("보드 컬럼 삭제 시작");
+            boardColumnRepository.deleteByProject(project);
+
+            // 9. 프로젝트 멤버 삭제
+            log.debug("프로젝트 멤버 삭제 시작");
+            projectMemberRepository.deleteByProject(project);
+
+            // 10. 프로젝트 삭제
+            log.debug("프로젝트 삭제 시작");
+            projectRepository.delete(project);
+
+            log.info("프로젝트 {} 삭제 완료", projectId);
+        } catch (Exception e) {
+            log.error("프로젝트 {} 삭제 중 오류 발생: {}", projectId, e.getMessage());
+            throw new RuntimeException("프로젝트 삭제 중 오류가 발생했습니다: " + e.getMessage(), e);
+        }
+    }
+
+    private void checkDeletePermission(Project project, User user) {
+        boolean hasDeletePermission = false;
+        
+        // 1. 사이트 ADMIN 권한 확인
         SiteMember siteMember = siteMemberRepository.findBySiteAndUser(project.getSite(), user)
                 .orElseThrow(() -> new IllegalArgumentException("사이트 멤버가 아닙니다."));
 
-        boolean hasDeletePermission = false;
-        
-        // 사이트 ADMIN이면 삭제 권한 부여
         if (siteMember.getRole() == MemberRole.ADMIN) {
             hasDeletePermission = true;
         } else {
-            // 3-2. 프로젝트 ADMIN/PM 권한 확인
+            // 2. 프로젝트 ADMIN/PM 권한 확인
             ProjectMember projectMember = projectMemberRepository.findByProjectAndUser(project, user)
                     .orElseThrow(() -> new IllegalArgumentException("프로젝트 멤버가 아닙니다."));
             
@@ -155,23 +209,6 @@ public class ProjectService {
 
         if (!hasDeletePermission) {
             throw new IllegalArgumentException("프로젝트 삭제 권한이 없습니다.");
-        }
-
-        try {
-            // 4. 연관된 엔티티들 삭제
-            // 4-1. 이슈 삭제
-            issueRepository.deleteByProject(project);
-            
-            // 4-2. 보드 컬럼 삭제
-            boardColumnRepository.deleteByProject(project);
-            
-            // 4-3. 프로젝트 멤버 삭제
-            projectMemberRepository.deleteByProject(project);
-            
-            // 5. 프로젝트 삭제
-            projectRepository.delete(project);
-        } catch (Exception e) {
-            throw new RuntimeException("프로젝트 삭제 중 오류가 발생했습니다: " + e.getMessage(), e);
         }
     }
 

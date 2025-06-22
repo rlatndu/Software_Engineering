@@ -44,4 +44,8 @@ public interface RecentWorkRepository extends JpaRepository<RecentWork, Long> {
     @Modifying
     @Query("DELETE FROM RecentWork rw WHERE rw.expiryDate < :now")
     void deleteExpiredRecords(@Param("now") LocalDateTime now);
+
+    @Modifying
+    @Query("DELETE FROM RecentWork r WHERE r.project.id = :projectId")
+    void deleteByProjectId(@Param("projectId") Long projectId);
 } 

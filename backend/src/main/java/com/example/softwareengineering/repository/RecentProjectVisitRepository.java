@@ -39,4 +39,8 @@ public interface RecentProjectVisitRepository extends JpaRepository<RecentProjec
     @Modifying
     @Query("DELETE FROM RecentProjectVisit rpv WHERE rpv.project.site.id = :siteId")
     void deleteByProjectSiteId(Long siteId);
+
+    @Modifying
+    @Query("DELETE FROM RecentProjectVisit r WHERE r.project.id = :projectId")
+    void deleteByProjectId(@Param("projectId") Long projectId);
 } 
