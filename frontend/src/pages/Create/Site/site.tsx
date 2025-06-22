@@ -80,7 +80,7 @@ const SiteCreatePage = () => {
         <div className="form-wrapper">
           <h2 className="form-title">사이트 생성하기</h2>
           <p className="form-description">
-            사이트 이름을 작성하세요. 사이트 이름은 Slime의 URL의 일부입니다.<br />
+            사이트 이름을 작성하세요..<br />
             대부분의 사용자는 팀 또는 회사 이름으로 사용합니다.<br />
             특수문자는 사용할 수 없으며, 최대 30자까지 입력 가능합니다.
           </p>

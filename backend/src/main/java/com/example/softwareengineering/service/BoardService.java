@@ -202,129 +202,21 @@ public class BoardService {
                         .build();
                 columnRepository.save(doneColumn);
                 log.debug("Done 칼럼 생성됨: columnId={}", doneColumn.getId());
+
+                // Hold 칼럼
+                BoardColumn holdColumn = BoardColumn.builder()
+                        .title("Hold")
+                        .icon("/assets/hold.png")
+                        .project(project)
+                        .orderIndex(4)
+                        .isActive(true)
+                        .build();
+                columnRepository.save(holdColumn);
+                log.debug("Hold 칼럼 생성됨: columnId={}", holdColumn.getId());
             }
         } catch (Exception e) {
             log.error("프로젝트 기본 칼럼 초기화 중 오류 발생: projectId={}", project.getId(), e);
             throw e;
         }
-    }
-
-    @Transactional
-    public BoardColumn createColumn(Long projectId, String title, String icon, Integer orderIndex, User user) {
-        // 1. 프로젝트 존재 확인
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
-
-        // 2. 권한 체크
-        // 2-1. 사이트 ADMIN 권한 확인
-        SiteMember siteMember = siteMemberRepository.findBySiteAndUser(project.getSite(), user)
-                .orElseThrow(() -> new IllegalArgumentException("사이트 멤버가 아닙니다."));
-
-        boolean hasPermission = false;
-        
-        // 사이트 ADMIN이면 즉시 권한 부여
-        if (siteMember.getRole() == MemberRole.ADMIN) {
-            hasPermission = true;
-        } else {
-            // 2-2. 프로젝트 PM 권한 확인
-            ProjectMember projectMember = projectMemberRepository.findByProjectAndUser(project, user)
-                    .orElseThrow(() -> new IllegalArgumentException("프로젝트 멤버가 아닙니다."));
-            
-            // PM인 경우에만 권한 부여
-            if (projectMember.getRole() == MemberRole.PM) {
-                hasPermission = true;
-            }
-        }
-
-        if (!hasPermission) {
-            throw new IllegalArgumentException("칼럼을 생성할 권한이 없습니다. 사이트 ADMIN 또는 해당 프로젝트의 PM만 칼럼을 생성할 수 있습니다.");
-        }
-
-        // 3. 칼럼 생성
-        BoardColumn column = BoardColumn.builder()
-                .title(title)
-                .icon(icon)
-                .project(project)
-                .orderIndex(orderIndex)
-                .isActive(true)
-                .build();
-
-        return columnRepository.save(column);
-    }
-
-    @Transactional
-    public BoardColumn updateColumn(Long columnId, String title, User user) {
-        // 1. 칼럼 존재 확인
-        BoardColumn column = columnRepository.findById(columnId)
-                .orElseThrow(() -> new IllegalArgumentException("칼럼을 찾을 수 없습니다."));
-
-        Project project = column.getProject();
-
-        // 2. 권한 체크
-        // 2-1. 사이트 ADMIN 권한 확인
-        SiteMember siteMember = siteMemberRepository.findBySiteAndUser(project.getSite(), user)
-                .orElseThrow(() -> new IllegalArgumentException("사이트 멤버가 아닙니다."));
-
-        boolean hasPermission = false;
-        
-        // 사이트 ADMIN이면 즉시 권한 부여
-        if (siteMember.getRole() == MemberRole.ADMIN) {
-            hasPermission = true;
-        } else {
-            // 2-2. 프로젝트 PM 권한 확인
-            ProjectMember projectMember = projectMemberRepository.findByProjectAndUser(project, user)
-                    .orElseThrow(() -> new IllegalArgumentException("프로젝트 멤버가 아닙니다."));
-            
-            // PM인 경우에만 권한 부여
-            if (projectMember.getRole() == MemberRole.PM) {
-                hasPermission = true;
-            }
-        }
-
-        if (!hasPermission) {
-            throw new IllegalArgumentException("칼럼을 수정할 권한이 없습니다. 사이트 ADMIN 또는 해당 프로젝트의 PM만 칼럼을 수정할 수 있습니다.");
-        }
-
-        // 3. 칼럼 수정
-        column.setTitle(title);
-        return columnRepository.save(column);
-    }
-
-    @Transactional
-    public void deleteColumn(Long columnId, User user) {
-        // 1. 칼럼 존재 확인
-        BoardColumn column = columnRepository.findById(columnId)
-                .orElseThrow(() -> new IllegalArgumentException("칼럼을 찾을 수 없습니다."));
-
-        Project project = column.getProject();
-
-        // 2. 권한 체크
-        // 2-1. 사이트 ADMIN 권한 확인
-        SiteMember siteMember = siteMemberRepository.findBySiteAndUser(project.getSite(), user)
-                .orElseThrow(() -> new IllegalArgumentException("사이트 멤버가 아닙니다."));
-
-        boolean hasPermission = false;
-        
-        // 사이트 ADMIN이면 즉시 권한 부여
-        if (siteMember.getRole() == MemberRole.ADMIN) {
-            hasPermission = true;
-        } else {
-            // 2-2. 프로젝트 PM 권한 확인
-            ProjectMember projectMember = projectMemberRepository.findByProjectAndUser(project, user)
-                    .orElseThrow(() -> new IllegalArgumentException("프로젝트 멤버가 아닙니다."));
-            
-            // PM인 경우에만 권한 부여
-            if (projectMember.getRole() == MemberRole.PM) {
-                hasPermission = true;
-            }
-        }
-
-        if (!hasPermission) {
-            throw new IllegalArgumentException("칼럼을 삭제할 권한이 없습니다. 사이트 ADMIN 또는 해당 프로젝트의 PM만 칼럼을 삭제할 수 있습니다.");
-        }
-
-        // 3. 칼럼 삭제 (실제로는 비활성화)
-        column.setIsActive(false);
-        columnRepository.save(column);
     }
 } 

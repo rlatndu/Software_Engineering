@@ -50,14 +50,12 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
   const commentDropdownRef = useRef<HTMLDivElement>(null);
 
   const [selectedIssue, setSelectedIssue] = useState<BoardIssue | null>(null);
-  const [menuOpenColumn, setMenuOpenColumn] = useState<number | null>(null);
   const [menuOpenIssue, setMenuOpenIssue] = useState<number | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingIssue, setEditingIssue] = useState<BoardIssue | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedColumn, setSelectedColumn] = useState<number | null>(null);
 
-  const columnDropdownRef = useRef<HTMLDivElement>(null);
   const issueDropdownRef = useRef<HTMLDivElement>(null);
 
   // 권한 캐시 상태 추가
@@ -210,90 +208,6 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
     }
   };
 
-  const handleColumnEdit = async (column: BoardColumn, newTitle: string) => {
-    if (!canManageProject(user, project)) {
-      setPopup({
-        type: 'accessDenied',
-        payload: { message: '컬럼을 수정할 권한이 없습니다.' }
-      });
-      return;
-    }
-
-    try {
-      // 기본 칼럼 수정 제한
-      if (column.id < COLUMN_CONSTANTS.CUSTOM_COLUMN_START_ID) {
-        setPopup({
-          type: 'accessDenied',
-          payload: { message: '기본 칼럼은 수정할 수 없습니다.' }
-        });
-        return;
-      }
-
-      // 기본 칼럼 이름과 중복 체크
-      const defaultColumnTitles = Object.values(COLUMN_CONSTANTS.DEFAULT_COLUMNS).map(col => col.title.toLowerCase());
-      if (defaultColumnTitles.includes(newTitle.toLowerCase())) {
-        setPopup({
-          type: 'accessDenied',
-          payload: { message: '기본 칼럼과 동일한 이름은 사용할 수 없습니다.' }
-        });
-        return;
-      }
-
-      // 사용자 정의 칼럼 중복 체크
-      const customColumns = columns.filter(col => col.id >= COLUMN_CONSTANTS.CUSTOM_COLUMN_START_ID);
-      if (customColumns.some(col => col.id !== column.id && col.title === newTitle)) {
-        setPopup({
-          type: 'accessDenied',
-          payload: { message: '이미 존재하는 칼럼 이름입니다.' }
-        });
-        return;
-      }
-
-      const updatedColumn = await boardService.updateColumn(column.id, newTitle);
-      setColumns(prev => prev.map(col => 
-        col.id === updatedColumn.id ? updatedColumn : col
-      ));
-      setMenuOpenColumn(null);
-      setPopup({ type: 'result', payload: { message: '칼럼이 수정되었습니다.' } });
-    } catch (err: any) {
-      setPopup({
-        type: 'accessDenied',
-        payload: { message: err.message || '칼럼 수정에 실패했습니다.' }
-      });
-    }
-  };
-
-  const handleColumnDelete = async (columnId: number) => {
-    if (!canManageProject(user, project)) {
-      setPopup({
-        type: 'accessDenied',
-        payload: { message: '컬럼을 삭제할 권한이 없습니다.' }
-      });
-      return;
-    }
-
-    try {
-      // 기본 칼럼 삭제 제한
-      if (columnId < COLUMN_CONSTANTS.CUSTOM_COLUMN_START_ID) {
-        setPopup({
-          type: 'accessDenied',
-          payload: { message: '기본 칼럼은 삭제할 수 없습니다.' }
-        });
-        return;
-      }
-
-      await boardService.deleteColumn(columnId);
-      setColumns(prev => prev.filter(col => col.id !== columnId));
-      setMenuOpenColumn(null);
-      setPopup({ type: 'result', payload: { message: '칼럼이 삭제되었습니다.' } });
-    } catch (err: any) {
-      setPopup({
-        type: 'accessDenied',
-        payload: { message: err.message || '칼럼 삭제에 실패했습니다.' }
-      });
-    }
-  };
-
   const handleCreateIssue = async (columnId: number, issueData: Partial<BoardIssue>) => {
     if (!canCreateIssue(user, project)) {
       setPopup({
@@ -350,87 +264,6 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
         payload: { message: '이슈 생성에 실패했습니다. 서버 오류가 발생했습니다.' }
       });
       throw err;
-    }
-  };
-
-  const addColumn = async () => {
-    if (!canManageProject(user, project)) {
-      setPopup({
-        type: 'accessDenied',
-        payload: { message: '컬럼을 생성할 권한이 없습니다.' }
-      });
-      return;
-    }
-
-    try {
-      /* 추후 적용 예정
-      // 현재 칼럼 수 체크
-      if (columns.length >= COLUMN_CONSTANTS.MAX_COLUMNS) {
-        setPopup({
-          type: 'accessDenied',
-          payload: { message: `칼럼은 최대 ${COLUMN_CONSTANTS.MAX_COLUMNS}개까지만 생성할 수 있습니다.` }
-        });
-        return;
-      }
-      */
-
-      const newColumnTitle = prompt('새 칼럼의 이름을 입력하세요:');
-      if (!newColumnTitle) return;
-
-      // 기본 칼럼 이름과 중복 체크
-      const defaultColumnTitles = Object.values(COLUMN_CONSTANTS.DEFAULT_COLUMNS).map(col => col.title.toLowerCase());
-      if (defaultColumnTitles.includes(newColumnTitle.toLowerCase())) {
-        setPopup({
-          type: 'accessDenied',
-          payload: { message: '기본 칼럼과 동일한 이름은 사용할 수 없습니다.' }
-        });
-        return;
-      }
-
-      // 사용자 정의 칼럼 중복 체크
-      const customColumns = columns.filter(col => col.id >= COLUMN_CONSTANTS.CUSTOM_COLUMN_START_ID);
-      if (customColumns.some(col => col.title.toLowerCase() === newColumnTitle.toLowerCase())) {
-        setPopup({
-          type: 'accessDenied',
-          payload: { message: '이미 존재하는 칼럼 이름입니다.' }
-        });
-        return;
-      }
-
-      const newColumn = await boardService.createColumn(project.id, newColumnTitle);
-      setColumns(prev => [...prev, newColumn]);
-      setPopup({ type: 'result', payload: { message: '새 칼럼이 생성되었습니다.' } });
-    } catch (err: any) {
-      setPopup({
-        type: 'accessDenied',
-        payload: { message: err.message || '칼럼 생성에 실패했습니다.' }
-      });
-    }
-  };
-
-  // 이슈 위치 업데이트를 위한 통합 함수
-  const updateIssuePosition = async (
-    issueId: number,
-    data: {
-      status: string;
-      columnId: number;
-      order: number;
-      projectId: number;
-    }
-  ) => {
-    try {
-      // 상태와 순서를 한 번에 업데이트하는 API 호출
-      await boardService.updateIssueStatus(
-        issueId,
-        data.status,
-        data.columnId,
-        data.order,
-        data.projectId
-      );
-      return true;
-    } catch (error) {
-      console.error('이슈 위치 업데이트 실패:', error);
-      throw new Error('이슈 위치 업데이트에 실패했습니다.');
     }
   };
 
@@ -570,11 +403,7 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (columnDropdownRef.current && !columnDropdownRef.current.contains(target)) {
-        setMenuOpenColumn(null);
-      }
-      if (issueDropdownRef.current && !issueDropdownRef.current.contains(target)) {
+      if (issueDropdownRef.current && !issueDropdownRef.current.contains(event.target as Node)) {
         setMenuOpenIssue(null);
       }
     };
@@ -582,27 +411,24 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const toggleColumnMenu = (id: number) => {
-    setMenuOpenColumn(menuOpenColumn === id ? null : id);
-  };
-
-  const getColumnIdForStatus = (status: string): number => {
-    const column = columns.find(col => {
-      switch (col.title.toLowerCase()) {
-        case 'to do':
-        case '할 일':
-          return status === 'TODO';
-        case 'in progress':
-        case '진행 중':
-          return status === 'IN_PROGRESS';
-        case 'done':
-        case '완료':
-          return status === 'DONE';
-        default:
-          return col.title.toUpperCase() === status;
-      }
-    });
-    return column ? column.id : columns[0].id; // 해당하는 상태의 칼럼이 없으면 첫 번째 칼럼 사용
+  const getColumnIcon = (columnTitle: string): string => {
+    const title = columnTitle.toLowerCase();
+    switch (title) {
+      case 'to do':
+      case '할 일':
+        return '/assets/todo.png';
+      case 'in progress':
+      case '진행 중':
+        return '/assets/inprogress.png';
+      case 'done':
+      case '완료':
+        return '/assets/done.png';
+      case 'hold':
+      case '보류':
+        return '/assets/hold.png';
+      default:
+        return '/assets/custom-column.png';
+    }
   };
 
   // 댓글 불러오기 함수
@@ -688,26 +514,6 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const getColumnIcon = (columnTitle: string): string => {
-    const title = columnTitle.toLowerCase();
-    switch (title) {
-      case 'to do':
-      case '할 일':
-        return '/assets/todo.png';
-      case 'in progress':
-      case '진행 중':
-        return '/assets/inprogress.png';
-      case 'done':
-      case '완료':
-        return '/assets/done.png';
-      case 'hold':
-      case '보류':
-        return '/assets/hold.png';
-      default:
-        return '/assets/custom-column.png';
-    }
-  };
-
   if (loading) {
     return <div className="loading">로딩 중...</div>;
   }
@@ -723,17 +529,6 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
                 <div className="board-title">
                   <span>{col.title}</span>
                   <img src={getColumnIcon(col.title)} alt={col.title} className="column-icon" />
-                </div>
-                <div className="menu-container">
-                  <button className="add-button" onClick={() => toggleColumnMenu(col.id)}>
-                    <img src="/assets/ellipsis.png" alt="menu" />
-                  </button>
-                  {menuOpenColumn === col.id && (
-                    <div className="dropdown-menu" ref={columnDropdownRef}>
-                      <button onClick={() => handleColumnEdit(col, '새 제목')}>수정</button>
-                      <button className="delete" onClick={() => handleColumnDelete(col.id)}>삭제</button>
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -805,11 +600,6 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
             </div>
           );
         })}
-        {canManageProject(user, project) && (
-          <button className="add-column-button" onClick={addColumn}>
-            <img src="/assets/plus.png" alt="add column" />
-          </button>
-        )}
 
         {selectedIssue && (
           <div className="issue-detail-overlay" onClick={() => setSelectedIssue(null)}>
@@ -971,7 +761,11 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
                 });
                 
                 // 이슈 상태가 변경된 경우 해당하는 칼럼으로 이동
-                const targetColumnId = getColumnIdForStatus(updated.status);
+                const targetColumn = columns.find(col => col.title.toUpperCase() === updated.status);
+                if (!targetColumn) {
+                  throw new Error('해당하는 칼럼을 찾을 수 없습니다.');
+                }
+                const targetColumnId = targetColumn.id;
                 
                 setIssuesByColumn(prev => {
                   const updatedColumns = { ...prev };
