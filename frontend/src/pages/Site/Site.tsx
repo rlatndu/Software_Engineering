@@ -5,6 +5,7 @@ import siteService, { Site } from "../../api/siteService";
 import { recentSiteService } from "../../api/recentSiteService";
 import { useAuth } from "../../contexts/AuthContext";
 import ResultPopup from "../../components/ResultPopup";
+import ConfirmPopup from "../../components/ConfirmPopup";
 import "./Site.css";
 
 const SitePage = () => {
@@ -368,31 +369,16 @@ const SitePage = () => {
 
       {/* 삭제 확인 모달 */}
       {showDeleteConfirm && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h3>사이트 삭제</h3>
-            <p>사이트 삭제 시 모든 프로젝트 및 내용이 삭제됩니다.</p>
-            {deleteError && <p className="error-text">{deleteError}</p>}
-            <div className="modal-buttons">
-              <button 
-                className="cancel-button"
-                onClick={() => {
-                  setShowDeleteConfirm(false);
-                  setSelectedSiteId(null);
-                  setDeleteError(null);
-                }}
-              >
-                취소
-              </button>
-              <button 
-                className="delete-button"
-                onClick={handleDeleteConfirm}
-              >
-                삭제
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmPopup
+          title="사이트 삭제"
+          message="사이트 삭제 시 모든 프로젝트 및 내용이 삭제됩니다."
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => {
+            setShowDeleteConfirm(false);
+            setSelectedSiteId(null);
+            setDeleteError(null);
+          }}
+        />
       )}
 
       {popup.type === 'result' && (

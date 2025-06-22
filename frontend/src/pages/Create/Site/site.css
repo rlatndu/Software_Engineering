@@ -127,41 +127,38 @@ html, body {
   border-top: 1px solid #e5e7eb;
 }
 
-/* 버튼 스타일 */
-.cancel-button,
-.submit-button {
-  padding: 0.625rem 1.25rem;
-  border-radius: 1.875rem;
-  font-size: 0.875rem;
-  font-weight: 500;
+/* 버튼 */
+button.cancel,
+button.submit {
+  padding: 0.5rem 2rem;
+  border-radius: 1.5rem;
+  border: 1px solid #ccc;
+  font-size: 0.75rem;
   cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 6.25rem;
-  text-align: center;
+  transition: background-color 0.2s ease;
 }
 
-.cancel-button {
-  background-color: transparent;
-  border: 1px solid #007AFF;
-  color: #007AFF;
+button.cancel {
+  background-color: white;
+  padding: 0 1.6rem;
 }
 
-.cancel-button:hover {
-  background-color: rgba(0, 122, 255, 0.1);
+button.cancel:hover {
+  background-color: #f3f4f6;
 }
 
-.submit-button {
-  background-color: #007AFF;
-  border: none;
+button.submit {
+  background-color: #3b82f6;
   color: white;
+  border: none;
 }
 
-.submit-button:hover {
-  background-color: #0056b3;
+button.submit:hover {
+  background-color: #2563eb;
 }
 
-.cancel-button:disabled,
-.submit-button:disabled {
+button.cancel:disabled,
+button.submit:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }

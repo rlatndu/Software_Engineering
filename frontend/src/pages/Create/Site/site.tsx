@@ -117,10 +117,10 @@ const SiteCreatePage = () => {
               </div>
             </div>
 
-            <div className="button-group">
+            <div className="form-buttons">
               <button 
                 type="button" 
-                className="cancel-button"
+                className="cancel"
                 onClick={handleCancel}
                 disabled={isProcessing}
               >
@@ -128,7 +128,7 @@ const SiteCreatePage = () => {
               </button>
               <button 
                 type="submit" 
-                className="submit-button"
+                className="submit"
                 disabled={isProcessing}
               >
                 {isProcessing ? "생성 중..." : "사이트 생성"}
