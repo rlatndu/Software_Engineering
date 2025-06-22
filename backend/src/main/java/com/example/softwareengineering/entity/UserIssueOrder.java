@@ -24,6 +24,10 @@ public class UserIssueOrder {
     @JoinColumn(name = "issue_id", nullable = false)
     private Issue issue;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id", nullable = false)
+    private Project project;
+
     @Column(nullable = false)
     private Integer orderIndex;
 
@@ -32,10 +36,12 @@ public class UserIssueOrder {
     private BoardColumn column;
 
     @Column(nullable = false)
-    private LocalDateTime createdAt;
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     @Column(nullable = false)
-    private LocalDateTime updatedAt;
+    @Builder.Default
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
     @PrePersist
     protected void onCreate() {

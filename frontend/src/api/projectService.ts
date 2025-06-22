@@ -246,13 +246,21 @@ export const projectService = {
     },
 
     updateIssueOrders: async (projectId: number, orderList: UpdateIssueOrderRequest[], userId: number) => {
+        try {
         const response = await axiosInstance.patch(`/projects/${projectId}/issues/order?userId=${userId}`, 
             orderList.map(item => ({
                 issueId: item.issueId,
                 order: item.order
             }))
         );
+            if (!response.data.success && response.data.message) {
+                throw new Error(response.data.message);
+            }
         return response.data;
+        } catch (error: any) {
+            console.error('이슈 순서 업데이트 실패:', error);
+            throw new Error(error.response?.data?.message || '이슈 순서 업데이트에 실패했습니다.');
+        }
     },
 
     getCustomStatuses: async (projectId: number) => {

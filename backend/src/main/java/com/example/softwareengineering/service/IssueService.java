@@ -17,12 +17,14 @@ import com.example.softwareengineering.repository.SiteMemberRepository;
 import com.example.softwareengineering.repository.UserIssueOrderRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.ArrayList;
 
+@Slf4j
 @Service
 @Transactional(readOnly = true)
 public class IssueService {
@@ -406,20 +408,32 @@ public class IssueService {
             Issue issue = issueRepository.findById(req.getIssueId())
                 .orElseThrow(() -> new CustomException("이슈를 찾을 수 없습니다."));
             
+            try {
             // 전역 순서 업데이트
             issue.setOrderIndex(req.getOrder());
             issueRepository.save(issue);
 
             // 사용자별 순서 업데이트
             UserIssueOrder userOrder = userIssueOrderRepository.findByUserAndIssueAndColumn(user, issue, issue.getColumn())
-                .orElse(UserIssueOrder.builder()
-                    .user(user)
-                    .issue(issue)
-                    .column(issue.getColumn())
-                    .build());
+                    .orElse(new UserIssueOrder());
+
+                // 새로운 UserIssueOrder인 경우
+                if (userOrder.getId() == null) {
+                    userOrder.setUser(user);
+                    userOrder.setIssue(issue);
+                    userOrder.setProject(project);  // project 설정
+                    userOrder.setColumn(issue.getColumn());
+                    userOrder.setCreatedAt(LocalDateTime.now());
+                }
             
             userOrder.setOrderIndex(req.getOrder());
+                userOrder.setUpdatedAt(LocalDateTime.now());
+                
             userIssueOrderRepository.save(userOrder);
+            } catch (Exception e) {
+                log.error("이슈 순서 업데이트 중 오류 발생: {}", e.getMessage(), e);
+                throw new CustomException("이슈 순서 업데이트에 실패했습니다: " + e.getMessage());
+            }
         }
     }
 

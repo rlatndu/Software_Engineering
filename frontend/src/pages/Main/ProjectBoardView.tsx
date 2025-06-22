@@ -465,14 +465,25 @@ const ProjectBoardView: React.FC<ProjectBoardViewProps> = ({ project }) => {
         setIssuesByColumn({ ...issuesByColumn, [sourceColId]: sourceIssues });
 
         // 사용자별 순서 업데이트 - 1000 단위로 간격을 두어 중간 삽입 용이하게 함
-        const orderUpdates = sourceIssues.map((issue, index) => ({
+        try {
+          const validIssues = sourceIssues.filter(issue => issue && issue.id);
+          if (validIssues.length !== sourceIssues.length) {
+            console.error('Invalid issues found:', sourceIssues);
+            throw new Error('유효하지 않은 이슈가 포함되어 있습니다.');
+          }
+          
+          const orderUpdates = validIssues.map((issue, index) => ({
           issueId: issue.id,
           order: (index + 1) * 1000
         }));
 
         // 순서 업데이트 API 호출 - 사용자별 순서 저장
-        if (user) {
+          if (user && orderUpdates.length > 0) {
           await projectService.updateIssueOrders(project.id, orderUpdates, user.id);
+          }
+        } catch (error) {
+          console.error('이슈 순서 업데이트 실패:', error);
+          throw error;
         }
       } else {
         // 다른 칼럼으로 이동

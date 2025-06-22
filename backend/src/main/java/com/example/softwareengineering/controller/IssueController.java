@@ -222,9 +222,20 @@ public class IssueController {
         @ApiResponse(responseCode = "400", description = "잘못된 요청")
     })
     @PatchMapping("/order")
-    public ResponseEntity<String> updateIssueOrders(@RequestBody java.util.List<IssueOrderUpdateRequest> orderList, @RequestParam Long userId) {
-        issueService.updateIssueOrders(orderList, userId);
-        return ResponseEntity.ok("이슈 우선순위가 변경되었습니다.");
+    public ResponseEntity<?> updateIssueOrders(@RequestBody java.util.List<IssueOrderUpdateRequest> orderList, @RequestParam Long userId) {
+        try {
+            log.info("이슈 우선순위 변경 요청: userId={}, orderList={}", userId, orderList);
+            issueService.updateIssueOrders(orderList, userId);
+            return ResponseEntity.ok(Map.of("message", "이슈 우선순위가 변경되었습니다.", "success", true));
+        } catch (CustomException e) {
+            log.error("이슈 우선순위 변경 실패: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                .body(Map.of("message", e.getMessage(), "success", false));
+        } catch (Exception e) {
+            log.error("이슈 우선순위 변경 중 오류 발생", e);
+            return ResponseEntity.internalServerError()
+                .body(Map.of("message", "서버 내부 오류가 발생했습니다.", "success", false));
+        }
     }
 
     @Operation(summary = "하위이슈 생성", description = "이슈 담당자만 하위이슈를 생성할 수 있습니다.")
