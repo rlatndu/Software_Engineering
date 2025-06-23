@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/invitations")
@@ -46,12 +47,18 @@ public class InvitationController {
         @ApiResponse(responseCode = "400", description = "잘못된 요청"),
         @ApiResponse(responseCode = "403", description = "권한 없음")
     })
-    public ResponseEntity<MembershipInviteResponse> inviteToProject(@RequestBody MembershipInviteRequest request) {
-        Invitation invitation = invitationService.inviteToProject(request.getProjectId(), request.getInviteeEmail(), request.getInviterId());
-        MembershipInviteResponse response = new MembershipInviteResponse();
-        response.setInvitationId(invitation.getId());
-        response.setStatus(invitation.isAccepted() ? "ACCEPTED" : invitation.isRejected() ? "REJECTED" : "PENDING");
-        return ResponseEntity.ok(response);
+    public ResponseEntity<Map<String, Object>> inviteToProject(@RequestBody MembershipInviteRequest request) {
+        Invitation invitation = invitationService.inviteToProject(
+                request.getProjectId(),
+                request.getInviteeEmail(),
+                request.getInviterId(),
+                request.getRole() != null ? com.example.softwareengineering.entity.MemberRole.valueOf(request.getRole()) : null);
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "초대 메일이 발송되었습니다.",
+                "invitationId", invitation.getId(),
+                "status", invitation.isAccepted() ? "ACCEPTED" : invitation.isRejected() ? "REJECTED" : "PENDING"
+        ));
     }
 
     @PostMapping("/{invitationId}/accept")
@@ -104,5 +111,17 @@ public class InvitationController {
             @Parameter(description = "프로젝트 ID") @PathVariable Long projectId) {
         List<InvitationResponse> invitations = invitationService.getProjectInvitations(projectId);
         return ResponseEntity.ok(invitations);
+    }
+
+    @PostMapping("/accept-by-token")
+    public ResponseEntity<Map<String, Object>> acceptByToken(@RequestParam String token) {
+        invitationService.acceptInvitationByToken(token);
+        return ResponseEntity.ok(Map.of("success", true, "message", "초대를 수락했습니다."));
+    }
+
+    @PostMapping("/reject-by-token")
+    public ResponseEntity<Map<String, Object>> rejectByToken(@RequestParam String token) {
+        invitationService.rejectInvitationByToken(token);
+        return ResponseEntity.ok(Map.of("success", true, "message", "초대를 거절했습니다."));
     }
 } 

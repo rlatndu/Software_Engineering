@@ -20,4 +20,7 @@ public interface InvitationRepository extends JpaRepository<Invitation, Long> {
     
     @Modifying
     void deleteBySite(Site site);
+
+    @Modifying
+    void deleteByProject(Project project);
 } 

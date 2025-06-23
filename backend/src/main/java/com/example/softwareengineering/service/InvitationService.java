@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.UUID;
+import java.util.Optional;
 
 @Service
 public class InvitationService {
@@ -48,37 +49,102 @@ public class InvitationService {
         if (inviterMember.getRole() != MemberRole.ADMIN) {
             throw new CustomException("사이트 관리자만 초대할 수 있습니다.");
         }
+        // 초대 대상 존재 여부 확인
+        userRepository.findByEmail(inviteeEmail)
+                .orElseThrow(() -> new CustomException("해당 이메일로 등록된 사용자가 없습니다."));
+
         Invitation invitation = new Invitation();
         invitation.setSite(site);
         invitation.setInviter(inviter);
         invitation.setInviteeEmail(inviteeEmail);
         invitation.setRole(MemberRole.PM);
         invitation.setCreatedAt(LocalDateTime.now());
-        return invitationRepository.save(invitation);
+        invitation.setToken(UUID.randomUUID().toString());
+
+        Invitation saved = invitationRepository.save(invitation);
+
+        emailService.sendInvitationEmail(inviteeEmail, site.getName(), saved.getToken());
+
+        return saved;
     }
 
     @Transactional
-    public Invitation inviteToProject(Long projectId, String inviteeEmail, Long inviterId) {
+    public Invitation inviteToProject(Long projectId, String inviteeEmail, Long inviterId, MemberRole role) {
         Project project = projectRepository.findById(projectId)
             .orElseThrow(() -> new CustomException("프로젝트를 찾을 수 없습니다."));
         User inviter = userRepository.findById(inviterId)
             .orElseThrow(() -> new CustomException("초대자를 찾을 수 없습니다."));
-        ProjectMember inviterMember = projectMemberRepository.findByProjectAndUser(project, inviter)
-            .orElseThrow(() -> new CustomException("초대자가 프로젝트 멤버가 아닙니다."));
-        if (inviterMember.getRole() != MemberRole.PM) {
-            throw new CustomException("프로젝트 관리자만 초대할 수 있습니다.");
+        // 프로젝트 멤버 여부 및 역할 확인
+        ProjectMember inviterMember = projectMemberRepository.findByProjectAndUser(project, inviter).orElse(null);
+        Site site = project.getSite();
+        SiteMember inviterSiteMember = siteMemberRepository.findBySiteAndUser(site, inviter).orElse(null);
+
+        boolean isAdmin = inviterSiteMember != null && inviterSiteMember.getRole() == MemberRole.ADMIN;
+        boolean isPm = inviterMember != null && inviterMember.getRole() == MemberRole.PM;
+
+        if (!isAdmin && !isPm) {
+            throw new CustomException("ADMIN 또는 PM만 초대할 수 있습니다.");
         }
-        if (invitationRepository.existsByInviteeEmailAndProject(inviteeEmail, project)) {
-            throw new CustomException("이미 초대된 사용자입니다.");
+
+        // 초대 대상 존재 여부 확인 및 이미 프로젝트 멤버인지 확인
+        User invitee = userRepository.findByEmail(inviteeEmail)
+                .orElseThrow(() -> new CustomException("해당 이메일로 등록된 사용자가 없습니다."));
+
+        // 이미 프로젝트 멤버인 경우
+        if (projectMemberRepository.findByProjectAndUser(project, invitee).isPresent()) {
+            throw new CustomException("해당 사용자는 이미 프로젝트의 멤버입니다.");
         }
+
+        /*
+         * 기존 초대가 있는지 확인한다.
+         *  - ACCEPTED : 이미 멤버므로 위 로직에서 걸러졌지만, 안전상 한 번 더 예외 처리
+         *  - PENDING  : 중복 초대 방지
+         *  - REJECTED : 토큰과 시간만 갱신하여 재발송 허용
+         */
+        Optional<Invitation> existingOpt = invitationRepository.findByInviteeEmailAndProject(inviteeEmail, project);
+        if (existingOpt.isPresent()) {
+            Invitation existing = existingOpt.get();
+
+            if (!existing.isRejected() && !existing.isAccepted()) {
+                throw new CustomException("이미 초대 메일이 발송되어 대기 중입니다.");
+            }
+
+            if (existing.isAccepted()) {
+                throw new CustomException("해당 사용자는 이미 프로젝트의 멤버입니다.");
+            }
+
+            // REJECTED 상태인 경우 -> 재초대 (토큰 갱신, 상태 초기화)
+            existing.setRejected(false);
+            existing.setAccepted(false);
+            existing.setToken(UUID.randomUUID().toString());
+            existing.setCreatedAt(LocalDateTime.now());
+
+            Invitation saved = invitationRepository.save(existing);
+            emailService.sendInvitationEmail(inviteeEmail, project.getName(), saved.getToken());
+            return saved;
+        }
+
         Invitation invitation = new Invitation();
         invitation.setProject(project);
         invitation.setInviter(inviter);
         invitation.setInviteeEmail(inviteeEmail);
-        invitation.setRole(MemberRole.MEMBER);
+        // 초대할 역할 결정: 사이트 ADMIN이면 무조건 PM, PM이 초대하면 MEMBER
+        MemberRole targetRole;
+        if (isAdmin) {
+            targetRole = MemberRole.PM;
+        } else {
+            targetRole = MemberRole.MEMBER;
+        }
+        invitation.setRole(targetRole);
         invitation.setCreatedAt(LocalDateTime.now());
         invitation.setToken(UUID.randomUUID().toString());
-        return invitationRepository.save(invitation);
+
+        Invitation saved = invitationRepository.save(invitation);
+
+        // 메일 발송
+        emailService.sendInvitationEmail(inviteeEmail, project.getName(), saved.getToken());
+
+        return saved;
     }
 
     @Transactional
@@ -116,6 +182,48 @@ public class InvitationService {
         if (!user.getEmail().equals(invitation.getInviteeEmail())) {
             throw new CustomException("초대된 사용자가 아닙니다.");
         }
+        invitation.setRejected(true);
+    }
+
+    @Transactional
+    public Invitation acceptInvitationByToken(String token) {
+        Invitation invitation = invitationRepository.findByToken(token)
+                .orElseThrow(() -> new CustomException("유효하지 않은 초대 토큰입니다."));
+
+        if (invitation.isAccepted()) return invitation; // 이미 수락 처리됨
+
+        User user = userRepository.findByEmail(invitation.getInviteeEmail())
+                .orElseThrow(() -> new CustomException("사용자 계정을 찾을 수 없습니다."));
+
+        invitation.setAccepted(true);
+
+        if (invitation.getSite() != null) {
+            SiteMember siteMember = new SiteMember();
+            siteMember.setSite(invitation.getSite());
+            siteMember.setUser(user);
+            siteMember.setRole(invitation.getRole());
+            siteMemberRepository.save(siteMember);
+        }
+        if (invitation.getProject() != null) {
+            ProjectMember projectMember = new ProjectMember();
+            projectMember.setProject(invitation.getProject());
+            projectMember.setUser(user);
+            projectMember.setRole(invitation.getRole());
+            projectMemberRepository.save(projectMember);
+        }
+
+        return invitation;
+    }
+
+    @Transactional
+    public void rejectInvitationByToken(String token) {
+        Invitation invitation = invitationRepository.findByToken(token)
+                .orElseThrow(() -> new CustomException("유효하지 않은 초대 토큰입니다."));
+
+        if (invitation.isRejected() || invitation.isAccepted()) {
+            return; // 이미 처리됨
+        }
+
         invitation.setRejected(true);
     }
 

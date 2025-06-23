@@ -27,13 +27,18 @@ public class ProjectMemberController {
         @ApiResponse(responseCode = "403", description = "권한 없음")
     })
     @PostMapping("/{projectId}/invite-pm")
-    public Map<String, String> invitePm(
+    public Map<String, Object> invitePm(
             @PathVariable Long projectId,
             @RequestBody MembershipInviteRequest request
     ) {
         request.setProjectId(projectId);
-        String result = projectMemberService.invitePm(request);
-        return Map.of("message", result);
+        try {
+            String result = projectMemberService.invitePm(request);
+            boolean success = result.contains("초대되었습니다");
+            return Map.of("success", success, "message", result);
+        } catch (RuntimeException e) {
+            return Map.of("success", false, "message", e.getMessage());
+        }
     }
 
     @Operation(summary = "프로젝트 멤버 초대", description = "ADMIN 또는 PM만 프로젝트에 MEMBER를 초대할 수 있습니다. userId(닉네임)로 초대합니다.")
@@ -42,13 +47,18 @@ public class ProjectMemberController {
         @ApiResponse(responseCode = "403", description = "권한 없음")
     })
     @PostMapping("/{projectId}/invite-member")
-    public Map<String, String> inviteMember(
+    public Map<String, Object> inviteMember(
             @PathVariable Long projectId,
             @RequestBody MembershipInviteRequest request
     ) {
         request.setProjectId(projectId);
-        String result = projectMemberService.inviteMember(request);
-        return Map.of("message", result);
+        try {
+            String result = projectMemberService.inviteMember(request);
+            boolean success = result.contains("초대되었습니다");
+            return Map.of("success", success, "message", result);
+        } catch (RuntimeException e) {
+            return Map.of("success", false, "message", e.getMessage());
+        }
     }
 
     @Operation(summary = "프로젝트 멤버 역할 변경", description = "ADMIN 또는 PM만 프로젝트 멤버의 역할을 변경할 수 있습니다. PM은 MEMBER만 변경 가능.")

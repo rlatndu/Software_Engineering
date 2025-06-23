@@ -36,6 +36,7 @@ public class ProjectService {
     private final UserIssueOrderRepository userIssueOrderRepository;
     private final IssueCommentRepository issueCommentRepository;
     private final IssueFileRepository issueFileRepository;
+    private final InvitationRepository invitationRepository;
 
     @Transactional
     public ProjectDTO createProject(Long siteId, String name, String key, boolean isPrivate, Long creatorId, String creatorRole) {
@@ -157,6 +158,10 @@ public class ProjectService {
             // 6. 알림 삭제
             log.debug("알림 삭제 시작");
             notificationRepository.deleteByProjectId(projectId);
+
+            // 6-1. 초대 데이터 삭제
+            log.debug("초대 데이터 삭제 시작");
+            invitationRepository.deleteByProject(project);
 
             // 7. 이슈 관련 데이터 삭제
             log.debug("이슈 관련 데이터 삭제 시작");

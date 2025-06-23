@@ -123,3 +123,25 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.invite-modal {
+  background:#fff;
+  padding:2rem 2.5rem 2rem;
+  border-radius:10px;
+  width:90vw;
+  max-width:28rem;
+  position:relative;
+}
+.close-icon{
+  position:absolute;
+  top:0.7rem;
+  right:0.7rem;
+  background:none;
+  border:none;
+  font-size:1.25rem;
+  cursor:pointer;
+  color:#636e72;
+}
+.close-icon:hover{color:#2d3436;}
+
+.modal-inner{gap:1.2rem;}

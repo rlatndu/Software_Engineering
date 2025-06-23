@@ -38,7 +38,7 @@ public class ProjectMemberService {
         String userId = request.getUserId();
         Long inviterId = request.getInviterId();
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException("프로젝트 없음"));
-        User user = userRepository.findByUserId(userId)
+        User user = userRepository.findByEmailOrUserId(userId, userId)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
         User inviter = userRepository.findById(inviterId).orElseThrow(() -> new CustomException("초대자 없음"));
         // ADMIN 권한 체크 (사이트 기준)
@@ -64,7 +64,7 @@ public class ProjectMemberService {
         String userId = request.getUserId();
         Long inviterId = request.getInviterId();
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException("프로젝트 없음"));
-        User user = userRepository.findByUserId(userId)
+        User user = userRepository.findByEmailOrUserId(userId, userId)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
         User inviter = userRepository.findById(inviterId).orElseThrow(() -> new CustomException("초대자 없음"));
         ProjectMember inviterProjectMember = projectMemberRepository.findByProjectAndUser(project, inviter).orElse(null);
@@ -89,7 +89,7 @@ public class ProjectMemberService {
     // ADMIN/PM이 프로젝트 멤버 역할 변경 (PM은 MEMBER만 변경 가능)
     public String changeRole(Long projectId, String userId, MemberRole newRole, Long changerId) {
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException("프로젝트 없음"));
-        User user = userRepository.findByUserId(userId)
+        User user = userRepository.findByEmailOrUserId(userId, userId)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
         User changer = userRepository.findById(changerId).orElseThrow(() -> new CustomException("변경자 없음"));
         ProjectMember changerMember = projectMemberRepository.findByProjectAndUser(project, changer).orElse(null);
@@ -113,7 +113,7 @@ public class ProjectMemberService {
     // ADMIN/PM이 프로젝트 멤버 삭제 (PM은 MEMBER만 삭제 가능)
     public String removeMember(Long projectId, String userId, Long removerId) {
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomException("프로젝트 없음"));
-        User user = userRepository.findByUserId(userId)
+        User user = userRepository.findByEmailOrUserId(userId, userId)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
         User remover = userRepository.findById(removerId).orElseThrow(() -> new CustomException("삭제자 없음"));
         ProjectMember removerMember = projectMemberRepository.findByProjectAndUser(project, remover).orElse(null);

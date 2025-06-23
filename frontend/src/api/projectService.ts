@@ -30,6 +30,13 @@ export interface UnresolvedIssue {
 
 export interface SiteMemberRoleResponse extends ApiResponse<{ role: UserRole }> {}
 
+export interface MemberInfo { id?: number; userId: string; role: string; }
+export interface ProjectWithMembers {
+    projectId: number;
+    projectName: string;
+    members: MemberInfo[];
+}
+
 // axios 인스턴스 생성
 const axiosInstance = axios.create({
     baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8081/api',
@@ -338,6 +345,11 @@ export const projectService = {
         } catch (error) {
             console.error('프로젝트 방문 기록 실패:', error);
         }
+    },
+
+    getProjectsWithMembers: async (siteId: number): Promise<ProjectWithMembers[]> => {
+        const response = await axiosInstance.get<ProjectWithMembers[]>(`/projects/site/${siteId}/with-members`);
+        return response.data;
     }
 };
 

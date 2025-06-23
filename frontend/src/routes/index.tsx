@@ -8,6 +8,8 @@ import Site from "../pages/Site/Site"
 import Main from "../pages/Main/Main";
 import ProjectCreatePage from "../pages/Create/Project/project";
 import SiteCreatePage from "../pages/Create/Site/site";
+import AcceptInvitation from "../pages/Invite/AcceptInvitation";
+import RejectInvitation from "../pages/Invite/RejectInvitation";
 
 const AppRouter = () => {
     return(
@@ -22,6 +24,8 @@ const AppRouter = () => {
                 <Route path="/main/:siteId" element={<Main />}/>
                 <Route path="/create/project/:siteId" element={<ProjectCreatePage />}/>
                 <Route path="/create/site" element={<SiteCreatePage />}/>
+                <Route path="/invite/accept" element={<AcceptInvitation />} />
+                <Route path="/invite/reject" element={<RejectInvitation />} />
             </Routes>
         </BrowserRouter>
     );

@@ -16,6 +16,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.HashMap;
+import com.example.softwareengineering.dto.ProjectWithMembersDto;
+import com.example.softwareengineering.repository.ProjectMemberRepository;
+import com.example.softwareengineering.repository.ProjectRepository;
+import com.example.softwareengineering.repository.SiteRepository;
+import com.example.softwareengineering.entity.Site;
+import com.example.softwareengineering.exception.CustomException;
 
 @RestController
 @RequestMapping("/api/projects")
@@ -23,6 +29,9 @@ import java.util.HashMap;
 @Tag(name = "프로젝트 관리", description = "프로젝트 생성, 삭제, 조회 API")
 public class ProjectController {
     private final ProjectService projectService;
+    private final ProjectMemberRepository projectMemberRepository;
+    private final ProjectRepository projectRepository;
+    private final SiteRepository siteRepository;
 
     @PostMapping
     @Operation(summary = "프로젝트 생성", description = "새로운 프로젝트를 생성합니다.")
@@ -99,6 +108,8 @@ public class ProjectController {
     public ResponseEntity<Map<String, Object>> getProjectsBySite(
             @Parameter(description = "사이트 ID") @PathVariable Long siteId) {
         try {
+            Site site = siteRepository.findById(siteId)
+                    .orElseThrow(() -> new CustomException("사이트를 찾을 수 없습니다."));
             List<ProjectDTO> projects = projectService.getProjectsBySite(siteId);
             
             Map<String, Object> response = new HashMap<>();
@@ -255,5 +266,34 @@ public class ProjectController {
             errorResponse.put("message", "미해결 이슈 목록 조회에 실패했습니다: " + e.getMessage());
             return ResponseEntity.internalServerError().body(errorResponse);
         }
+    }
+
+    @GetMapping("/site/{siteId}/with-members")
+    @Operation(summary = "사이트의 프로젝트 및 멤버 조회", description = "사이트에 속한 프로젝트들과 각 프로젝트 멤버 정보를 반환합니다.")
+    public ResponseEntity<List<ProjectWithMembersDto>> getProjectsWithMembers(@PathVariable Long siteId) {
+        Site site = siteRepository.findById(siteId)
+                .orElseThrow(() -> new CustomException("사이트를 찾을 수 없습니다."));
+
+        List<Project> projects = projectRepository.findBySite(site);
+
+        List<ProjectWithMembersDto> result = projects.stream().map(p -> {
+            ProjectWithMembersDto dto = new ProjectWithMembersDto();
+            dto.setProjectId(p.getId());
+            dto.setProjectName(p.getName());
+
+            // 동일 사용자가 중복으로 들어가는 것을 방지하기 위해 userId 기준으로 그룹핑 후 한 번만 포함
+            List<ProjectWithMembersDto.MemberInfo> memberInfos = projectMemberRepository.findByProject(p).stream()
+                    .collect(java.util.stream.Collectors.toMap(
+                            pm -> pm.getUser().getUserId(),
+                            pm -> pm.getRole().name(),
+                            (existing, replacement) -> existing))
+                    .entrySet().stream()
+                    .map(e -> new ProjectWithMembersDto.MemberInfo(e.getKey(), e.getValue()))
+                    .toList();
+            dto.setMembers(memberInfos);
+            return dto;
+        }).toList();
+
+        return ResponseEntity.ok(result);
     }
 } 

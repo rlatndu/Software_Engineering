@@ -15,6 +15,8 @@ import ProjectCreatePage from "./pages/Create/Project/project";
 import NotificationPage from "./pages/Notification/NotificationPage";
 import { AuthProvider } from './contexts/AuthContext';
 import ProjectInvitePage from "./pages/Team/ProjectInvite";
+import AcceptInvitation from "./pages/Invite/AcceptInvitation";
+import RejectInvitation from "./pages/Invite/RejectInvitation";
 
 function App() {
   return (
@@ -35,7 +37,8 @@ function App() {
           <Route path="/Create/Site" element={<SiteCreatePage />} />
           <Route path="/project" element={<Project />} />
           <Route path="/create/project/:siteId" element={<ProjectCreatePage />}/>
-          <Route path="/invite/:projectId" element={<ProjectInvitePage />} />
+          <Route path="/invite/accept" element={<AcceptInvitation />} />
+          <Route path="/invite/reject" element={<RejectInvitation />} />
         </Routes>
       </Router>
     </AuthProvider>
